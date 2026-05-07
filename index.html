@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>烽火广告 · 导航中心</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#1d2129;font-size:14px;}
+
+.layout{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:220px;background:#001529;display:flex;flex-direction:column;flex-shrink:0;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid #e8ecf0;display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,21,41,.08);}
+.content{flex:1;overflow-y:auto;padding:24px;}
+
+.sidebar-logo{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06);}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#1890ff,#096dd9);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:18px;height:18px;fill:#fff;}
+.logo-text{font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.logo-text span{color:#1890ff;}
+.sidebar-nav{padding:12px 0;flex:1;}
+.nav-group-title{padding:8px 20px;font-size:11px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;margin-top:8px;}
+.nav-item{padding:11px 20px;display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:all .2s;position:relative;text-decoration:none;}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.06);}
+.nav-item.active{color:#fff;background:#1890ff;}
+.nav-item.active::before{content:'';position:absolute;right:0;top:0;bottom:0;width:3px;background:#40a9ff;}
+.nav-item.wip{opacity:.5;cursor:not-allowed;}
+.nav-item.wip:hover{background:none;color:rgba(255,255,255,.65);}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.8;}
+.nav-item.active svg,.nav-item:hover svg{opacity:1;}
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1890ff,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+.user-info .name{font-size:13px;color:#fff;font-weight:500;}
+.user-info .role{font-size:11px;color:rgba(255,255,255,.4);}
+
+.topbar-breadcrumb{font-size:14px;color:#8c9ab0;display:flex;align-items:center;gap:6px;}
+.topbar-breadcrumb .current{color:#1d2129;font-weight:500;}
+.topbar-breadcrumb .sep{color:#d9dfe8;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.topbar-icon{width:36px;height:36px;border-radius:8px;border:1px solid #e8ecf0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#595f6e;transition:all .2s;}
+.topbar-icon:hover{border-color:#1890ff;color:#1890ff;}
+.topbar-icon svg{width:18px;height:18px;}
+
+.page-header{margin-bottom:24px;}
+.page-title{font-size:20px;font-weight:700;color:#1d2129;}
+.page-desc{font-size:13px;color:#8c9ab0;margin-top:4px;}
+
+/* Page grid */
+.section-title{font-size:13px;font-weight:700;color:#8c9ab0;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:#e8ecf0;}
+.section{margin-bottom:28px;}
+.page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.page-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1.5px solid transparent;transition:all .22s;cursor:pointer;text-decoration:none;display:block;}
+.page-card:hover{border-color:#1890ff;box-shadow:0 4px 16px rgba(24,144,255,.13);transform:translateY(-2px);}
+.page-card.wip{cursor:not-allowed;opacity:.6;}
+.page-card.wip:hover{border-color:transparent;box-shadow:0 1px 4px rgba(0,0,0,.07);transform:none;}
+.card-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:13px;}
+.card-icon svg{width:20px;height:20px;}
+.icon-blue{background:#e6f4ff;color:#1890ff;}
+.icon-purple{background:#f9f0ff;color:#722ed1;}
+.icon-orange{background:#fff7e6;color:#fa8c16;}
+.icon-green{background:#f6ffed;color:#52c41a;}
+.icon-cyan{background:#e6fffb;color:#13c2c2;}
+.icon-gray{background:#f5f5f5;color:#8c9ab0;}
+.card-name{font-size:14px;font-weight:700;color:#1d2129;margin-bottom:5px;display:flex;align-items:center;gap:8px;}
+.card-desc{font-size:12px;color:#8c9ab0;line-height:1.6;}
+.wip-badge{font-size:10px;background:#f5f5f5;color:#bfbfbf;border-radius:4px;padding:1px 7px;font-weight:600;letter-spacing:.4px;}
+.ready-badge{font-size:10px;background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f;border-radius:4px;padding:1px 7px;font-weight:600;}
+
+.nav-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.75);color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:all .3s;z-index:9999;white-space:nowrap;}
+.nav-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#d9dfe8;border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="logo-text">烽<span>火</span>广告</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-title">广告管理</div>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        广告概览
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+        广告活动
+      </a>
+      <div class="nav-group-title">智能优化</div>
+      <a class="nav-item" href="strategy_center_for_customer.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        策略中心
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.96-1.61L23 6H6"/></svg>
+        出价管理
+      </a>
+      <div class="nav-group-title">AI 助手</div>
+      <a class="nav-item" href="ai_assistant.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0015.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/></svg>
+        AI 助手
+      </a>
+      <div class="nav-group-title">数据分析</div>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        数据报表
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        效果分析
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">张</div>
+      <div class="user-info">
+        <div class="name">张小明</div>
+        <div class="role">卖家账户</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span class="current">导航中心</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-icon" title="帮助">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="topbar-icon" title="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-header">
+        <div class="page-title">烽火广告 · 页面导航</div>
+        <div class="page-desc">点击卡片快速跳转到对应功能页面，灰色卡片表示页面正在建设中</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">广告管理</div>
+        <div class="page-grid">
+          <a class="page-card wip" href="#" onclick="wipToast(event)">
+            <div class="card-icon icon-gray">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </div>
+            <div class="card-name">广告概览 <span class="wip-badge">建设中</span></div>
+            <div class="card-desc">查看整体广告投放数据与核心指标汇总</div>
+          </a>
+          <a class="page-card wip" href="#" onclick="wipToast(event)">
+            <div class="card-icon icon-gray">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            </div>
+            <div class="card-name">广告活动 <span class="wip-badge">建设中</span></div>
+            <div class="card-desc">管理广告系列、广告组及广告投放设置</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">智能优化</div>
+        <div class="page-grid">
+          <a class="page-card" href="strategy_center_for_customer.html">
+            <div class="card-icon icon-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <div class="card-name">策略中心 <span class="ready-badge">已上线</span></div>
+            <div class="card-desc">通过 AI 对话智能创建和管理广告投放策略，基于标签中心实时匹配</div>
+          </a>
+          <a class="page-card wip" href="#" onclick="wipToast(event)">
+            <div class="card-icon icon-gray">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.96-1.61L23 6H6"/></svg>
+            </div>
+            <div class="card-name">出价管理 <span class="wip-badge">建设中</span></div>
+            <div class="card-desc">智能出价策略配置与竞价规则管理</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">AI 助手</div>
+        <div class="page-grid">
+          <a class="page-card" href="ai_assistant.html">
+            <div class="card-icon icon-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0015.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/></svg>
+            </div>
+            <div class="card-name">AI 助手 <span class="ready-badge">已上线</span></div>
+            <div class="card-desc">广告全局诊断、优化建议报告生成，以及定时数据巡检任务创建与钉钉推送</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">数据分析</div>
+        <div class="page-grid">
+          <a class="page-card wip" href="#" onclick="wipToast(event)">
+            <div class="card-icon icon-gray">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <div class="card-name">数据报表 <span class="wip-badge">建设中</span></div>
+            <div class="card-desc">多维度广告数据报表，支持自定义时间与指标筛选</div>
+          </a>
+          <a class="page-card wip" href="#" onclick="wipToast(event)">
+            <div class="card-icon icon-gray">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="card-name">效果分析 <span class="wip-badge">建设中</span></div>
+            <div class="card-desc">广告投放效果趋势与归因分析</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav-toast" id="navToast">该页面正在建设中，敬请期待 🚧</div>
+
+<script>
+function wipToast(e) {
+  e.preventDefault();
+  const t = document.getElementById('navToast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>

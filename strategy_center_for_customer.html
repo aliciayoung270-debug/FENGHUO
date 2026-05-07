@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>策略中心 · 客户版</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#1d2129;font-size:14px;}
+
+/* ===== LAYOUT ===== */
+.layout{display:flex;height:100vh;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:52px;background:#fff;border-bottom:1px solid #e8ecf0;display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+
+/* ===== SIDEBAR (compact icon nav) ===== */
+.sidebar{width:64px;background:#1a1c2e;display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.sidebar-logo{padding:14px 0 12px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.07);width:100%;margin-bottom:4px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:18px;height:18px;fill:#fff;}
+.sidebar-nav{display:flex;flex-direction:column;align-items:center;width:100%;padding:4px 0;flex:1;}
+.nav-item{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 0;font-size:11px;color:rgba(255,255,255,.45);cursor:pointer;transition:all .18s;position:relative;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+.nav-item.active{color:#fff;background:rgba(124,58,237,.25);border-left-color:#7c3aed;}
+.nav-item.wip{opacity:.45;cursor:not-allowed;}
+.nav-item.wip:hover{color:rgba(255,255,255,.45);background:none;}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;}
+.nav-item .ni-label{font-size:10px;letter-spacing:.2px;}
+.nav-item .ni-badge{background:#e8473f;color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;letter-spacing:.5px;margin-bottom:1px;}
+.sidebar-footer{padding:12px 0 16px;border-top:1px solid rgba(255,255,255,.07);width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.user-name-small{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.2px;}
+
+/* Toast */
+.nav-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.75);color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:all .3s;z-index:9999;white-space:nowrap;}
+.nav-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Subnav flyout */
+.subnav-flyout{position:fixed;left:64px;top:0;background:#1f2241;min-width:168px;border-radius:0 10px 10px 0;box-shadow:6px 0 24px rgba(0,0,0,.28);z-index:300;padding:8px 0;display:none;border:1px solid rgba(255,255,255,.06);border-left:none;}
+.subnav-flyout.open{display:block;}
+.subnav-hd{padding:6px 16px 8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px;}
+.subnav-link{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13px;color:rgba(255,255,255,.6);text-decoration:none;transition:all .15s;border-left:3px solid transparent;}
+.subnav-link:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.05);}
+.subnav-link.active{color:#fff;background:rgba(124,58,237,.2);border-left-color:#7c3aed;}
+.subnav-link svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
+.subnav-link.active svg{opacity:1;}
+
+/* ===== TOPBAR ===== */
+.topbar-breadcrumb{font-size:13px;color:#8c9ab0;display:flex;align-items:center;gap:6px;}
+.topbar-breadcrumb .current{color:#1d2129;font-weight:500;}
+.topbar-breadcrumb .sep{color:#d9dfe8;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.topbar-icon{width:34px;height:34px;border-radius:7px;border:1px solid #e8ecf0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#595f6e;transition:all .2s;}
+.topbar-icon:hover{border-color:#7c3aed;color:#7c3aed;}
+.topbar-icon svg{width:16px;height:16px;}
+
+/* ===== PAGE HEADER ===== */
+.page-header{margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;}
+.page-title{font-size:18px;font-weight:700;color:#1d2129;}
+.page-desc{font-size:12px;color:#8c9ab0;margin-top:3px;line-height:1.6;}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;border:none;transition:all .2s;font-family:inherit;white-space:nowrap;outline:none;}
+.btn-primary{background:#7c3aed;color:#fff;}
+.btn-primary:hover{background:#6d28d9;}
+.btn-default{background:#fff;color:#595f6e;border:1px solid #d9dfe8;}
+.btn-default:hover{border-color:#7c3aed;color:#7c3aed;}
+.btn-ai{background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);color:#fff;padding:8px 18px;font-size:13px;font-weight:600;border-radius:7px;box-shadow:0 4px 12px rgba(124,58,237,.35);}
+.btn-ai:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(124,58,237,.45);}
+.btn-ai:active{transform:translateY(0);}
+.btn-ai svg{width:16px;height:16px;}
+.btn svg{width:14px;height:14px;}
+
+/* ===== FILTER BAR ===== */
+.filter-card{background:#fff;border-radius:8px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.filter-item{display:flex;align-items:center;gap:6px;}
+.filter-label{font-size:12px;color:#595f6e;white-space:nowrap;}
+.filter-input,.filter-select{height:32px;padding:0 10px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;background:#fff;outline:none;transition:border-color .2s;font-family:inherit;}
+.filter-input{width:150px;}
+.filter-input:focus,.filter-select:focus{border-color:#7c3aed;box-shadow:0 0 0 2px rgba(124,58,237,.1);}
+.filter-select{cursor:pointer;padding-right:28px;}
+.filter-divider{width:1px;height:18px;background:#e8ecf0;}
+.filter-actions{display:flex;gap:8px;margin-left:auto;}
+.date-range{display:flex;align-items:center;gap:6px;}
+.date-range input{height:32px;padding:0 10px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;background:#fff;outline:none;width:130px;font-family:inherit;}
+.date-range input:focus{border-color:#7c3aed;}
+.date-range .sep{font-size:12px;color:#bfbfbf;}
+
+/* ===== TABLE ===== */
+.table-card{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;}
+.table-toolbar{padding:12px 16px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;justify-content:space-between;}
+.table-toolbar-left{display:flex;align-items:center;gap:10px;}
+.table-toolbar-title{font-size:14px;font-weight:600;color:#1d2129;}
+.total-badge{background:#f0f3f8;color:#8c9ab0;padding:2px 8px;border-radius:100px;font-size:12px;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:#fafbfc;}
+thead th{padding:10px 14px;text-align:left;font-size:12px;color:#8c9ab0;font-weight:600;border-bottom:1px solid #f0f3f8;white-space:nowrap;}
+tbody tr{cursor:default;transition:background .15s;}
+tbody tr:hover{background:#f8f7ff;}
+tbody td{padding:12px 14px;font-size:13px;color:#1d2129;border-bottom:1px solid #f5f7fa;}
+tbody tr:last-child td{border-bottom:none;}
+.name-link{color:#7c3aed;cursor:pointer;font-weight:500;}
+.name-link:hover{text-decoration:underline;}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:12px;font-weight:500;}
+.tag-blue{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.tag-green{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
+.tag-orange{background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;}
+.tag-purple{background:#faf5ff;color:#7c3aed;border:1px solid #e9d5ff;}
+.tag-red{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.tag-indigo{background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;}
+.tag-pink{background:#fdf2f8;color:#be185d;border:1px solid #fbcfe8;}
+
+/* Action links */
+.actions{display:flex;gap:12px;}
+.action-btn{font-size:12px;color:#7c3aed;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;transition:color .2s;}
+.action-btn:hover{color:#6d28d9;}
+.action-btn.del{color:#dc2626;}
+.action-btn.del:hover{color:#b91c1c;}
+
+/* Status */
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;}
+.status-dot{width:6px;height:6px;border-radius:50%;}
+.dot-active{background:#16a34a;}
+.dot-inactive{background:#bfbfbf;}
+.dot-running{background:#7c3aed;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* Pagination */
+.pagination{padding:12px 16px;display:flex;align-items:center;border-top:1px solid #f0f3f8;}
+.page-info{font-size:12px;color:#8c9ab0;margin-right:auto;}
+.page-btns{display:flex;gap:5px;}
+.page-btn{width:30px;height:30px;border-radius:6px;border:1px solid #d9dfe8;background:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:#595f6e;}
+.page-btn:hover:not(.active):not(:disabled){border-color:#7c3aed;color:#7c3aed;}
+.page-btn.active{background:#7c3aed;border-color:#7c3aed;color:#fff;}
+.page-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ===== AI CHAT DRAWER ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.show{opacity:1;pointer-events:all;}
+.chat-drawer{position:fixed;right:0;top:0;bottom:0;width:680px;background:#fff;z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.23,1,.32,1);box-shadow:-4px 0 28px rgba(0,0,0,.1);}
+.chat-drawer.show{transform:translateX(0);}
+.drawer-header{padding:16px 22px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.drawer-title{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#1d2129;}
+.ai-pill{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.6px;}
+.drawer-notice{font-size:11px;color:#f59e0b;background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:3px 10px;font-weight:500;}
+.drawer-close{width:30px;height:30px;border-radius:6px;border:1px solid #e8ecf0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8c9ab0;font-size:18px;line-height:1;transition:all .2s;}
+.drawer-close:hover{background:#f5f7fa;color:#1d2129;}
+
+/* Chat Body */
+.chat-body{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth;}
+.chat-welcome{text-align:center;padding:24px 20px 12px;}
+.welcome-icon{width:58px;height:58px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 8px 20px rgba(124,58,237,.28);}
+.welcome-icon svg{width:28px;height:28px;fill:#fff;}
+.welcome-h{font-size:17px;font-weight:700;color:#1d2129;margin-bottom:6px;}
+.welcome-p{font-size:12px;color:#8c9ab0;line-height:1.7;max-width:440px;margin:0 auto;}
+.welcome-limit{display:inline-flex;align-items:center;gap:6px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:6px;padding:6px 14px;margin:12px auto 0;font-size:12px;color:#7c3aed;}
+.quick-starts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+.qs-btn{padding:6px 14px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:100px;font-size:12px;color:#7c3aed;cursor:pointer;transition:all .2s;}
+.qs-btn:hover{background:#7c3aed;color:#fff;border-color:#7c3aed;}
+
+/* Chat Messages */
+.chat-msg{display:flex;gap:10px;align-items:flex-start;}
+.chat-msg.user{flex-direction:row-reverse;}
+.msg-avatar{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.avatar-ai{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;}
+.avatar-user{background:#ede9fe;color:#7c3aed;}
+.msg-body{max-width:500px;}
+.msg-name{font-size:11px;color:#8c9ab0;margin-bottom:4px;}
+.chat-msg.user .msg-name{text-align:right;}
+.bubble{padding:11px 15px;border-radius:12px;font-size:13px;line-height:1.75;word-break:break-word;}
+.bubble-ai{background:#f5f7fa;color:#1d2129;border-bottom-left-radius:4px;}
+.bubble-user{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-bottom-right-radius:4px;}
+.bubble ul{padding-left:16px;margin-top:6px;}
+.bubble li{margin-bottom:4px;}
+.bubble strong{font-weight:600;}
+.bubble code{background:rgba(0,0,0,.07);padding:2px 6px;border-radius:4px;font-size:12px;font-family:'SF Mono','Monaco',monospace;}
+
+/* Typing indicator */
+.typing{display:flex;align-items:center;gap:5px;padding:10px 14px;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:#c0c9d4;animation:typing .9s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:.15s;}
+.typing-dot:nth-child(3){animation-delay:.3s;}
+@keyframes typing{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+
+/* Strategy Preview */
+.preview-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:10px;overflow:hidden;margin-top:10px;box-shadow:0 3px 10px rgba(0,0,0,.06);}
+.preview-header{padding:11px 15px;background:linear-gradient(135deg,#f5f3ff,#eef2ff);border-bottom:1px solid #e8ecf0;display:flex;align-items:center;gap:8px;}
+.preview-header-icon{font-size:15px;}
+.preview-header-text{font-size:13px;font-weight:700;color:#1d2129;}
+.preview-header-text span{color:#7c3aed;}
+.preview-body{padding:14px;}
+.preview-section{margin-bottom:12px;}
+.preview-section:last-child{margin-bottom:0;}
+.preview-section-title{font-size:11px;font-weight:700;color:#8c9ab0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.preview-section-title::after{content:'';flex:1;height:1px;background:#f0f3f8;}
+.cond-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.cond-tag{padding:4px 11px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid;}
+.cond-tag-blue{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;}
+.cond-tag-purple{background:#faf5ff;color:#7c3aed;border-color:#e9d5ff;}
+.cond-tag-green{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;}
+.cond-tag-action{background:#fff7ed;color:#ea580c;border-color:#fed7aa;}
+.preview-params{background:#f8f7ff;border-radius:7px;padding:11px;display:flex;gap:20px;flex-wrap:wrap;margin-top:4px;}
+.param-item{display:flex;flex-direction:column;gap:2px;}
+.param-label{font-size:11px;color:#8c9ab0;}
+.param-value{font-size:13px;font-weight:700;color:#1d2129;}
+.preview-footer{padding:11px 15px;border-top:1px solid #f0f3f8;display:flex;gap:10px;background:#fafbfc;}
+.preview-footer .btn{flex:1;}
+
+/* Success Box */
+.success-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 15px;display:flex;gap:10px;align-items:flex-start;margin-top:10px;}
+.success-icon{font-size:17px;flex-shrink:0;line-height:1.4;}
+.success-text{font-size:13px;color:#1d2129;line-height:1.7;}
+.success-link{color:#7c3aed;cursor:pointer;text-decoration:underline;font-weight:500;}
+
+/* Chat Input */
+.chat-footer{border-top:1px solid #f0f3f8;padding:14px 22px;flex-shrink:0;}
+.input-box{background:#f5f7fa;border:1.5px solid #e8ecf0;border-radius:10px;padding:11px 15px;transition:all .2s;}
+.input-box:focus-within{border-color:#7c3aed;background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.1);}
+.input-row{display:flex;gap:10px;align-items:flex-end;}
+.chat-textarea{flex:1;border:none;background:transparent;font-size:13px;color:#1d2129;resize:none;outline:none;min-height:20px;max-height:110px;font-family:inherit;line-height:1.6;}
+.chat-textarea::placeholder{color:#c0c9d4;}
+.send-btn{background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:7px 16px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;font-family:inherit;transition:all .2s;}
+.send-btn:hover{background:#6d28d9;}
+.send-btn svg{width:13px;height:13px;}
+.input-tips{font-size:11px;color:#c0c9d4;margin-top:6px;display:flex;align-items:center;gap:6px;}
+.tip-tag{background:#e8ecf0;color:#8c9ab0;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;}
+
+/* ===== DETAIL PAGE ===== */
+.detail-wrap{display:none;}
+.detail-wrap.show{display:block;}
+.list-wrap{display:block;}
+.list-wrap.hide{display:none;}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#8c9ab0;cursor:pointer;margin-bottom:14px;transition:color .2s;}
+.back-link:hover{color:#7c3aed;}
+.back-link svg{width:13px;height:13px;}
+.detail-hero{background:#fff;border-radius:8px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.detail-hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.detail-name{font-size:18px;font-weight:700;color:#1d2129;display:flex;align-items:center;gap:10px;}
+.detail-meta{display:flex;gap:28px;}
+.meta-item{display:flex;flex-direction:column;gap:3px;}
+.meta-label{font-size:11px;color:#8c9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.meta-value{font-size:13px;color:#1d2129;font-weight:500;}
+.tabs-wrap{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;}
+.tabs-nav{display:flex;border-bottom:1px solid #f0f3f8;padding:0 22px;}
+.tab-item{padding:12px 18px;font-size:13px;color:#8c9ab0;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;font-weight:500;white-space:nowrap;}
+.tab-item.active{color:#7c3aed;border-bottom-color:#7c3aed;}
+.tab-item:hover:not(.active){color:#595f6e;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.tab-body{padding:22px;}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.info-card{background:#f8f7ff;border-radius:8px;padding:14px;}
+.info-card-label{font-size:11px;color:#8c9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.info-card-value{font-size:15px;font-weight:700;color:#1d2129;}
+.info-section{background:#fafbfc;border-radius:8px;padding:16px;border:1px solid #f0f3f8;}
+.info-section-title{font-size:13px;font-weight:700;color:#1d2129;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.info-section-title::before{content:'';width:3px;height:13px;background:#7c3aed;border-radius:2px;}
+.info-kv{display:flex;align-items:flex-start;margin-bottom:9px;font-size:13px;}
+.info-kv:last-child{margin-bottom:0;}
+.info-k{color:#8c9ab0;width:100px;flex-shrink:0;}
+.info-v{color:#1d2129;font-weight:500;flex:1;}
+.config-section{margin-bottom:14px;}
+.config-section-hd{background:#fafbfc;border:1px solid #f0f3f8;border-radius:8px 8px 0 0;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
+.config-section-hd h4{font-size:13px;font-weight:700;color:#1d2129;display:flex;align-items:center;gap:8px;}
+.config-section-hd h4::before{content:'';width:3px;height:12px;border-radius:2px;}
+.hd-blue::before{background:#2563eb;}
+.hd-green::before{background:#16a34a;}
+.hd-orange::before{background:#ea580c;}
+.config-section-bd{border:1px solid #f0f3f8;border-top:none;border-radius:0 0 8px 8px;padding:14px;}
+.cond-row{display:flex;align-items:center;gap:9px;padding:9px 11px;background:#f8f7ff;border-radius:7px;border:1px solid #ede9fe;margin-bottom:7px;}
+.cond-row:last-of-type{margin-bottom:0;}
+.cond-connector{font-size:11px;font-weight:800;color:#fff;background:#7c3aed;padding:2px 7px;border-radius:4px;letter-spacing:.5px;flex-shrink:0;}
+.cond-connector.or{background:#ea580c;}
+.field-sel{height:30px;padding:0 9px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;background:#fff;cursor:pointer;outline:none;transition:border-color .2s;}
+.field-sel:focus{border-color:#7c3aed;}
+.op-sel{height:30px;padding:0 9px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;background:#fff;cursor:pointer;outline:none;width:76px;}
+.val-input{height:30px;padding:0 9px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;width:100px;outline:none;transition:border-color .2s;}
+.val-input:focus{border-color:#7c3aed;}
+.cond-del{color:#dc2626;cursor:pointer;font-size:17px;line-height:1;margin-left:auto;flex-shrink:0;transition:color .2s;}
+.cond-del:hover{color:#b91c1c;}
+.add-cond{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#7c3aed;cursor:pointer;margin-top:9px;transition:color .2s;}
+.add-cond:hover{color:#6d28d9;}
+.action-row{display:flex;align-items:center;gap:11px;padding:11px 13px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;}
+.action-label{font-size:13px;color:#16a34a;font-weight:600;white-space:nowrap;}
+.action-val-input{height:30px;padding:0 9px;border:1px solid #bbf7d0;border-radius:6px;font-size:12px;color:#1d2129;width:90px;outline:none;background:#fff;}
+.action-unit{font-size:12px;color:#8c9ab0;}
+.config-footer{display:flex;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid #f0f3f8;margin-top:6px;}
+
+/* ===== VIEW TOGGLE ===== */
+.view-toggle{display:flex;gap:4px;}
+.view-btn{width:30px;height:30px;border-radius:6px;border:1px solid #d9dfe8;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8c9ab0;transition:all .2s;}
+.view-btn:hover:not(.active){border-color:#7c3aed;color:#7c3aed;}
+.view-btn.active{background:#7c3aed;border-color:#7c3aed;color:#fff;}
+.view-btn svg{width:14px;height:14px;}
+
+/* ===== CARD VIEW ===== */
+.group-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.group-tab{display:inline-flex;align-items:center;gap:6px;padding:7px 20px;border-radius:100px;border:1.5px solid #d9dfe8;background:#fff;font-size:13px;color:#595f6e;cursor:pointer;font-family:inherit;font-weight:500;transition:all .2s;line-height:1;}
+.group-tab:hover:not(.active){border-color:#c4b5fd;color:#7c3aed;}
+.group-tab.active{background:#7c3aed;border-color:#7c3aed;color:#fff;}
+.group-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.lifecycle-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.lifecycle-card{background:#fff;border-radius:10px;border:2px solid #e8ecf0;padding:20px 14px 16px;cursor:pointer;transition:all .22s;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;overflow:hidden;}
+.lifecycle-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#e8ecf0;transition:background .22s;}
+.lifecycle-card:hover{border-color:#c4b5fd;box-shadow:0 4px 14px rgba(124,58,237,.1);}
+.lifecycle-card.active{border-color:#7c3aed;background:#faf5ff;}
+.lifecycle-card.active::before{background:#7c3aed;}
+.lc-chevron{position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:5px;background:#f0f3f8;display:flex;align-items:center;justify-content:center;transition:all .22s;}
+.lifecycle-card.active .lc-chevron{background:#ede9fe;}
+.lc-chevron svg{width:10px;height:10px;transition:transform .22s;color:#8c9ab0;}
+.lifecycle-card.active .lc-chevron svg{color:#7c3aed;transform:rotate(90deg);}
+.lc-icon{font-size:26px;line-height:1;}
+.lc-name{font-size:15px;font-weight:700;color:#1d2129;}
+.lc-count{font-size:12px;color:#8c9ab0;background:#f5f7fa;padding:2px 10px;border-radius:100px;}
+.lifecycle-card.active .lc-count{background:#ede9fe;color:#7c3aed;}
+.lifecycle-panel{display:none;background:#fff;border-radius:10px;border:1px solid #e8ecf0;border-left:3px solid #7c3aed;margin-top:10px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.lifecycle-panel.show{display:block;}
+.panel-body{padding:16px 18px;}
+.object-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.object-tab{padding:6px 16px;border-radius:6px;border:1.5px solid #e8ecf0;background:#f5f7fa;font-size:13px;color:#595f6e;cursor:pointer;font-family:inherit;font-weight:500;transition:all .2s;}
+.object-tab:hover:not(.active){border-color:#c4b5fd;color:#7c3aed;}
+.object-tab.active{background:#ede9fe;border-color:#7c3aed;color:#7c3aed;font-weight:600;}
+.st-list{display:flex;flex-direction:column;gap:8px;}
+.st-item{border:1px solid #e8ecf0;border-radius:8px;overflow:hidden;}
+.st-header{padding:11px 14px;background:#fafbfc;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s;user-select:none;}
+.st-header:hover{background:#f0f3f8;}
+.st-item.open>.st-header{background:#f8f7ff;border-bottom:1px solid #ede9fe;}
+.st-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.st-name{font-size:13px;font-weight:600;color:#1d2129;flex:1;}
+.st-count-badge{background:#f0f3f8;color:#8c9ab0;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:500;}
+.st-chevron{color:#c0c9d4;display:flex;align-items:center;transition:transform .22s;}
+.st-chevron svg{width:12px;height:12px;}
+.st-item.open>.st-header .st-chevron{transform:rotate(90deg);color:#7c3aed;}
+.st-body{display:none;padding:10px 14px 14px;background:#fff;}
+.st-item.open>.st-body{display:block;}
+.sc-list{display:flex;flex-direction:column;gap:8px;}
+.strategy-card{background:#fafbfc;border:1px solid #f0f3f8;border-radius:8px;padding:12px 14px;transition:all .2s;}
+.strategy-card:hover{border-color:#ddd6fe;background:#faf5ff;}
+.sc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.sc-name{font-size:13px;font-weight:600;color:#1d2129;cursor:pointer;line-height:1.55;flex:1;}
+.sc-name:hover{color:#7c3aed;}
+.sc-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.sc-badge-applied{display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;white-space:nowrap;}
+.sc-badge-applied::before{content:'';width:5px;height:5px;border-radius:50%;background:#16a34a;flex-shrink:0;}
+.sc-badge-unapplied{display:inline-flex;align-items:center;gap:4px;background:#f5f7fa;color:#8c9ab0;border:1px solid #e8ecf0;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:500;white-space:nowrap;}
+.sc-badge-unapplied::before{content:'';width:5px;height:5px;border-radius:50%;background:#d9dfe8;flex-shrink:0;}
+.sc-apply-btn{background:#7c3aed;color:#fff;border:none;border-radius:5px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;font-weight:500;}
+.sc-apply-btn:hover{background:#6d28d9;}
+.sc-desc{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.desc-chip{background:#f0f3f8;color:#595f6e;padding:2px 8px;border-radius:4px;font-size:11px;}
+.sc-actions{display:flex;gap:12px;border-top:1px solid #f5f7fa;padding-top:8px;}
+.sc-action-link{font-size:12px;color:#7c3aed;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;transition:color .2s;}
+.sc-action-link:hover{color:#6d28d9;}
+.sc-action-link.del{color:#dc2626;}
+.sc-action-link.del:hover{color:#b91c1c;}
+
+/* ===== UTILITY ===== */
+.hidden{display:none!important;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#d9dfe8;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#bfbfbf;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR (compact icon nav) ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="#" onclick="toggleAdSubnav(event)" title="广告" id="navItemAd">
+        <span class="ni-badge">AD</span>
+        <span class="ni-label">广告</span>
+      </a>
+      <a class="nav-item" href="ai_assistant.html" title="AI 助手" style="border-left-color:transparent;">
+        <span class="ni-badge" style="background:linear-gradient(135deg,#0ea5e9,#7c3aed);">AI</span>
+        <span class="ni-label">AI</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="商品">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="ni-label">商品</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="AMC">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>
+        <span class="ni-label">AMC</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="店铺">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="ni-label">店铺</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="品牌">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="ni-label">品牌</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="用户">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="ni-label">用户</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="工具">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        <span class="ni-label">工具</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">杨</div>
+      <div class="user-name-small">杨修瑛</div>
+    </div>
+  </aside>
+
+  <!-- Subnav flyout -->
+  <div class="subnav-flyout" id="adSubnav">
+    <div class="subnav-hd">广告</div>
+    <a class="subnav-link" href="ad_manager.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      广告管理
+    </a>
+    <a class="subnav-link active" href="strategy_center_for_customer.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      策略中心
+    </a>
+    <a class="subnav-link" href="strategy_template.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      策略模版
+    </a>
+    <a class="subnav-link" href="smart_suggestions.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      智能建议
+    </a>
+  </div>
+
+  <!-- ===== MAIN AREA ===== -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span>广告</span><span class="sep">/</span>
+        <span>智能优化</span><span class="sep">/</span>
+        <span class="current" id="breadcrumb-current">策略中心</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-icon" title="帮助">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="topbar-icon" title="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CONTENT ===== -->
+    <div class="content">
+
+      <!-- ====== LIST VIEW ====== -->
+      <div class="list-wrap" id="listView">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title">策略中心</div>
+            <div class="page-desc">管理广告否定类投放策略，通过 AI 快速优化已有策略规则</div>
+          </div>
+          <button class="btn btn-ai" onclick="openChat()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            AI 优化策略
+          </button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-card">
+          <div class="filter-item">
+            <span class="filter-label">负责人</span>
+            <select class="filter-select" style="width:120px;">
+              <option value="">全部</option>
+              <option selected>杨修瑛</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">策略目标</span>
+            <select class="filter-select" style="width:120px;">
+              <option value="">全部目标</option>
+              <option selected>减少损失</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">策略类型</span>
+            <select class="filter-select" style="width:160px;">
+              <option value="">全部类型</option>
+              <option>精准否词（广告组）</option>
+              <option>否词根（广告组）</option>
+              <option>否品（广告组）</option>
+              <option>精准否词（父ASIN）</option>
+              <option>精准否词（广告活动）</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">时间周期</span>
+            <div class="date-range">
+              <input type="date" value="2026-04-01">
+              <span class="sep">—</span>
+              <input type="date" value="2026-04-25">
+            </div>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">应用状态</span>
+            <select class="filter-select" style="width:110px;">
+              <option value="">全部状态</option>
+              <option>已启用</option>
+              <option>已停用</option>
+              <option>执行中</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">模版名称</span>
+            <input class="filter-input" type="text" placeholder="搜索模版名称">
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              查询
+            </button>
+            <button class="btn btn-default">重置</button>
+          </div>
+        </div>
+
+        <!-- Region Selection Tabs (NEW) -->
+        <div class="group-tabs" id="regionTabs">
+          <button class="group-tab active" data-region="all" onclick="selectRegion(this)">
+            <span class="group-dot"></span>
+            全国
+          </button>
+          <button class="group-tab" data-region="shandong-a" onclick="selectRegion(this)">
+            <span class="group-dot"></span>
+            山东A组
+          </button>
+          <button class="group-tab" data-region="shandong-b" onclick="selectRegion(this)">
+            <span class="group-dot"></span>
+            山东B组
+          </button>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-card" id="tableViewContainer">
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <span class="table-toolbar-title">策略列表</span>
+              <span class="total-badge">共 5 条</span>
+            </div>
+            <div class="view-toggle">
+              <button class="view-btn active" id="viewBtnTable" onclick="switchView('table')" title="表格视图">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 9v6"/></svg>
+              </button>
+              <button class="view-btn" id="viewBtnCard" onclick="switchView('card')" title="卡片视图">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="tableBody">
+          <table>
+            <thead>
+              <tr>
+                <th>策略名称</th>
+                <th>策略目标</th>
+                <th>策略类型</th>
+                <th>创建人</th>
+                <th>创建时间</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="name-link" onclick="showDetail('精准否词-高ACOS搜索词','精准否词（广告组）')">精准否词-高ACOS搜索词</span></td>
+                <td><span class="tag tag-red">减少损失</span></td>
+                <td><span class="tag tag-purple">精准否词（广告组）</span></td>
+                <td>杨修瑛</td>
+                <td>2026-04-22 14:35</td>
+                <td><span class="status"><span class="status-dot dot-active"></span>已启用</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn" onclick="showDetail('精准否词-高ACOS搜索词','精准否词（广告组）')">查看</button>
+                    <button class="action-btn" onclick="showDetail('精准否词-高ACOS搜索词','精准否词（广告组）')">编辑</button>
+                    <button class="action-btn del">删除</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="name-link" onclick="showDetail('词根否词-低相关词清除','否词根（广告组）')">词根否词-低相关词清除</span></td>
+                <td><span class="tag tag-red">减少损失</span></td>
+                <td><span class="tag tag-blue">否词根（广告组）</span></td>
+                <td>杨修瑛</td>
+                <td>2026-04-21 09:12</td>
+                <td><span class="status"><span class="status-dot dot-active"></span>已启用</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn" onclick="showDetail('词根否词-低相关词清除','否词根（广告组）')">查看</button>
+                    <button class="action-btn" onclick="showDetail('词根否词-低相关词清除','否词根（广告组）')">编辑</button>
+                    <button class="action-btn del">删除</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="name-link" onclick="showDetail('否品保护-竞品ASIN屏蔽','否品（广告组）')">否品保护-竞品ASIN屏蔽</span></td>
+                <td><span class="tag tag-red">减少损失</span></td>
+                <td><span class="tag tag-indigo">否品（广告组）</span></td>
+                <td>杨修瑛</td>
+                <td>2026-04-20 16:48</td>
+                <td><span class="status"><span class="status-dot dot-running"></span>执行中</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn" onclick="showDetail('否品保护-竞品ASIN屏蔽','否品（广告组）')">查看</button>
+                    <button class="action-btn" onclick="showDetail('否品保护-竞品ASIN屏蔽','否品（广告组）')">编辑</button>
+                    <button class="action-btn del">删除</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="name-link" onclick="showDetail('父ASIN精准否词策略','精准否词（父ASIN）')">父ASIN精准否词策略</span></td>
+                <td><span class="tag tag-red">减少损失</span></td>
+                <td><span class="tag tag-orange">精准否词（父ASIN）</span></td>
+                <td>杨修瑛</td>
+                <td>2026-04-18 11:03</td>
+                <td><span class="status"><span class="status-dot dot-inactive"></span>已停用</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn" onclick="showDetail('父ASIN精准否词策略','精准否词（父ASIN）')">查看</button>
+                    <button class="action-btn" onclick="showDetail('父ASIN精准否词策略','精准否词（父ASIN）')">编辑</button>
+                    <button class="action-btn del">删除</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="name-link" onclick="showDetail('活动层否词-全局屏蔽词','精准否词（广告活动）')">活动层否词-全局屏蔽词</span></td>
+                <td><span class="tag tag-red">减少损失</span></td>
+                <td><span class="tag tag-pink">精准否词（广告活动）</span></td>
+                <td>杨修瑛</td>
+                <td>2026-04-15 08:30</td>
+                <td><span class="status"><span class="status-dot dot-active"></span>已启用</span></td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn" onclick="showDetail('活动层否词-全局屏蔽词','精准否词（广告活动）')">查看</button>
+                    <button class="action-btn" onclick="showDetail('活动层否词-全局屏蔽词','精准否词（广告活动）')">编辑</button>
+                    <button class="action-btn del">删除</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span class="page-info">共 5 条记录，每页 10 条</span>
+            <div class="page-btns">
+              <button class="page-btn" disabled>‹</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn" disabled>›</button>
+            </div>
+          </div>
+        </div>
+        </div><!-- /tableViewContainer -->
+      </div><!-- /list-wrap -->
+
+      <!-- ====== DETAIL VIEW ====== -->
+      <div class="detail-wrap" id="detailView">
+        <div class="back-link" onclick="showList()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          返回策略列表
+        </div>
+
+        <div class="detail-hero">
+          <div class="detail-hero-top">
+            <div class="detail-name">
+              <span id="detail-name-text">精准否词-高ACOS搜索词</span>
+              <span class="tag tag-purple" id="detail-type-tag">精准否词（广告组）</span>
+              <span class="status" style="font-size:12px;margin-left:4px;"><span class="status-dot dot-active"></span>已启用</span>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-default">停用策略</button>
+              <button class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                编辑策略
+              </button>
+            </div>
+          </div>
+          <div class="detail-meta">
+            <div class="meta-item"><div class="meta-label">策略 ID</div><div class="meta-value">STR-20260422-0031</div></div>
+            <div class="meta-item"><div class="meta-label">策略目标</div><div class="meta-value">减少损失</div></div>
+            <div class="meta-item"><div class="meta-label">创建人</div><div class="meta-value">杨修瑛</div></div>
+            <div class="meta-item"><div class="meta-label">创建时间</div><div class="meta-value">2026-04-22 14:35</div></div>
+            <div class="meta-item"><div class="meta-label">最近执行</div><div class="meta-value">2026-04-23 08:00</div></div>
+            <div class="meta-item"><div class="meta-label">执行频率</div><div class="meta-value">每日 08:00</div></div>
+          </div>
+        </div>
+
+        <div class="tabs-wrap">
+          <div class="tabs-nav">
+            <div class="tab-item active" onclick="switchTab('basic',this)">基本信息</div>
+            <div class="tab-item" onclick="switchTab('config',this)">策略配置明细</div>
+          </div>
+
+          <div class="tab-panel active" id="tab-basic">
+            <div class="tab-body">
+              <div class="info-grid">
+                <div class="info-card">
+                  <div class="info-card-label">策略类型</div>
+                  <div class="info-card-value" id="detail-info-type">精准否词（广告组）</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-card-label">适用广告活动</div>
+                  <div class="info-card-value">8 个</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-card-label">本月触发次数</div>
+                  <div class="info-card-value">43 次</div>
+                </div>
+                <div class="info-card">
+                  <div class="info-card-label">累计否词数</div>
+                  <div class="info-card-value">126 个</div>
+                </div>
+              </div>
+              <div class="info-section">
+                <div class="info-section-title">策略描述</div>
+                <div style="font-size:13px;color:#595f6e;line-height:1.8;">
+                  当搜索词的<strong style="color:#7c3aed;">预估ACOS</strong>高于目标ACOS时，在<strong style="color:#2563eb;">广告组层级</strong>对该搜索词执行<strong>精准否词</strong>操作，防止持续亏损曝光消耗预算。
+                </div>
+                <div style="margin-top:12px;">
+                  <div style="font-size:11px;color:#8c9ab0;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">搜索词标签（来自标签中心）</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;">
+                    <span class="cond-tag cond-tag-purple">搜索词标签 = 预估ACOS &gt; 目标ACOS</span>
+                    <span class="cond-tag cond-tag-blue">否词层级 = 广告组</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="tab-config">
+            <div class="tab-body">
+              <div class="config-section">
+                <div class="config-section-hd">
+                  <h4 class="hd-blue">搜索词条件（全部满足）</h4>
+                  <span style="font-size:11px;color:#8c9ab0;">匹配 AND 逻辑</span>
+                </div>
+                <div class="config-section-bd">
+                  <div class="cond-row">
+                    <span class="cond-connector">AND</span>
+                    <select class="field-sel">
+                      <option selected>搜索词标签</option>
+                      <option>ACOS</option>
+                      <option>点击量</option>
+                      <option>曝光量</option>
+                    </select>
+                    <select class="op-sel"><option selected>=</option><option>≠</option><option>包含</option></select>
+                    <select class="field-sel">
+                      <option selected>预估ACOS &gt; 目标ACOS</option>
+                      <option>预估ACOS &lt; 目标ACOS</option>
+                      <option>高曝光低转化</option>
+                    </select>
+                    <span class="cond-del" title="删除">×</span>
+                  </div>
+                  <div class="add-cond" onclick="addCondRow(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M12 5v14M5 12h14"/></svg>
+                    添加条件
+                  </div>
+                </div>
+              </div>
+
+              <div class="config-section">
+                <div class="config-section-hd">
+                  <h4 class="hd-green">执行动作</h4>
+                </div>
+                <div class="config-section-bd">
+                  <div class="action-row">
+                    <span class="action-label">🚫 精准否词</span>
+                    <span style="font-size:12px;color:#595f6e;">否词层级</span>
+                    <select class="field-sel">
+                      <option selected>广告组</option>
+                      <option>广告活动</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="config-footer">
+                <button class="btn btn-default">取消</button>
+                <button class="btn btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  保存修改
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /detail-wrap -->
+
+            <!-- Card View Container -->
+      <div id="cardViewContainer" style="display:none;">
+        <div class="table-card">
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <span class="table-toolbar-title">策略列表</span>
+              <span class="total-badge">共 9 条</span>
+            </div>
+            <div class="view-toggle">
+              <button class="view-btn" onclick="switchView('table')" title="表格视图">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 9v6"/></svg>
+              </button>
+              <button class="view-btn active" onclick="switchView('card')" title="卡片视图">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              </button>
+            </div>
+          </div>
+          <div style="padding:14px 16px 0;">
+            <div class="lifecycle-grid" id="lifecycleGrid">
+              <div class="lifecycle-card active" data-lifecycle="mature" onclick="selectLifecycle(this)">
+                <div class="lc-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+                <div class="lc-icon">📈</div>
+                <div class="lc-name">成熟期</div>
+                <div class="lc-count">3</div>
+              </div>
+              <div class="lifecycle-card" data-lifecycle="new" onclick="selectLifecycle(this)">
+                <div class="lc-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+                <div class="lc-icon">🌟</div>
+                <div class="lc-name">新品期</div>
+                <div class="lc-count">2</div>
+              </div>
+              <div class="lifecycle-card" data-lifecycle="promo" onclick="selectLifecycle(this)">
+                <div class="lc-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+                <div class="lc-icon">🚀</div>
+                <div class="lc-name">推广期</div>
+                <div class="lc-count">2</div>
+              </div>
+              <div class="lifecycle-card" data-lifecycle="decline" onclick="selectLifecycle(this)">
+                <div class="lc-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
+                <div class="lc-icon">📉</div>
+                <div class="lc-name">衰退期</div>
+                <div class="lc-count">2</div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:12px 16px 16px;">
+            <div class="lifecycle-panel show" style="margin-top:0;">
+              <div class="panel-body" id="panelBody"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+
+<!-- ===== AI CHAT DRAWER ===== -->
+<div class="overlay" id="overlay" onclick="closeChat()"></div>
+<div class="chat-drawer" id="chatDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      AI 优化策略
+      <span class="ai-pill">BETA</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="drawer-notice">⚠️ 仅支持修改已有否定类策略</span>
+      <button class="drawer-close" onclick="closeChat()">×</button>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    <div class="chat-welcome" id="chatWelcome">
+      <div class="welcome-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" fill="none" stroke="#fff" stroke-width="1.8"/></svg>
+      </div>
+      <div class="welcome-h">AI 优化否定类策略</div>
+      <div class="welcome-p">告诉我您想如何调整现有的否定类策略，AI 将识别策略类型并更新对应的搜索词标签条件。</div>
+      <div class="welcome-limit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        当前仅支持修改：精准否词（广告组）、否词根（广告组）、否品（广告组）等否定类策略
+      </div>
+      <div class="quick-starts">
+        <div class="qs-btn" onclick="useQuickStart(this)">当预估ACOS小于目标ACOS时精准否词至广告组</div>
+        <div class="qs-btn" onclick="useQuickStart(this)">调整否词根的触发阈值</div>
+        <div class="qs-btn" onclick="useQuickStart(this)">修改否品策略的竞品条件</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <div class="input-box">
+      <div class="input-row">
+        <textarea class="chat-textarea" id="chatInput" placeholder="描述您想对哪条否定类策略进行什么调整..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          发送
+        </button>
+      </div>
+    </div>
+    <div class="input-tips">
+      <span class="tip-tag">Enter</span> 发送 &nbsp;
+      <span class="tip-tag">Shift+Enter</span> 换行
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ===== VIEW SWITCHING =====
+let activeView = 'table';
+
+function showDetail(name, type) {
+  document.getElementById('listView').classList.add('hide');
+  document.getElementById('cardViewContainer').style.display = 'none';
+  document.getElementById('detailView').classList.add('show');
+  document.getElementById('detail-name-text').textContent = name;
+  document.getElementById('breadcrumb-current').textContent = name;
+  if (document.getElementById('detail-info-type')) {
+    document.getElementById('detail-info-type').textContent = type;
+  }
+  const tag = document.getElementById('detail-type-tag');
+  tag.textContent = type;
+  const colorMap = {
+    '精准否词（广告组）':'tag-purple',
+    '否词根（广告组）':'tag-blue',
+    '否品（广告组）':'tag-indigo',
+    '精准否词（父ASIN）':'tag-orange',
+    '精准否词（广告活动）':'tag-pink'
+  };
+  tag.className = 'tag ' + (colorMap[type] || 'tag-purple');
+  window.scrollTo(0,0);
+}
+
+function showList() {
+  document.getElementById('listView').classList.remove('hide');
+  document.getElementById('detailView').classList.remove('show');
+  document.getElementById('breadcrumb-current').textContent = '策略中心';
+  if (activeView === 'card') {
+    document.getElementById('tableViewContainer').style.display = 'none';
+    document.getElementById('cardViewContainer').style.display = 'block';
+    if (!document.getElementById('panelBody').innerHTML.trim()) {
+      renderPanel('mature', '减少损失');
+    }
+  } else {
+    document.getElementById('tableViewContainer').style.display = 'block';
+    document.getElementById('cardViewContainer').style.display = 'none';
+  }
+}
+
+// ===== TABS =====
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// ===== CHAT =====
+function openChat() {
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('chatDrawer').classList.add('show');
+  setTimeout(() => document.getElementById('chatInput').focus(), 350);
+}
+
+function closeChat() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('chatDrawer').classList.remove('show');
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+function useQuickStart(el) {
+  document.getElementById('chatInput').value = el.textContent.trim();
+  sendMessage();
+}
+
+// Chat state: 0=init, 1=recognized, 2=preview, 3=done
+let chatState = 0;
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  document.getElementById('chatWelcome').style.display = 'none';
+  appendUserMsg(text);
+  input.value = '';
+  input.style.height = 'auto';
+
+  if (chatState === 0) {
+    chatState = 1;
+    showTyping(() => appendAIRecognize(text));
+  } else if (chatState === 1) {
+    chatState = 2;
+    showTyping(() => appendAIPreview());
+  } else {
+    chatState = 0;
+    showTyping(() => appendAIGeneric());
+  }
+}
+
+function appendUserMsg(text) {
+  const chatBody = document.getElementById('chatBody');
+  const el = document.createElement('div');
+  el.className = 'chat-msg user';
+  el.innerHTML = `
+    <div class="msg-avatar avatar-user">杨</div>
+    <div class="msg-body">
+      <div class="msg-name">我</div>
+      <div class="bubble bubble-user">${escHtml(text)}</div>
+    </div>`;
+  chatBody.appendChild(el);
+  scrollBottom();
+}
+
+function showTyping(callback) {
+  const chatBody = document.getElementById('chatBody');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.id = 'typingIndicator';
+  el.innerHTML = `
+    <div class="msg-avatar avatar-ai">AI</div>
+    <div class="msg-body">
+      <div class="msg-name">AI 优化助手</div>
+      <div class="bubble bubble-ai"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>
+    </div>`;
+  chatBody.appendChild(el);
+  scrollBottom();
+  setTimeout(() => {
+    const ind = document.getElementById('typingIndicator');
+    if (ind) ind.remove();
+    callback();
+    scrollBottom();
+  }, 1400);
+}
+
+function appendAIRecognize(userText) {
+  const chatBody = document.getElementById('chatBody');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `
+    <div class="msg-avatar avatar-ai">AI</div>
+    <div class="msg-body">
+      <div class="msg-name">AI 优化助手</div>
+      <div class="bubble bubble-ai">
+        已识别您的优化意图 ✅ 解析结果如下：<br><br>
+        <ul>
+          <li>🎯 <strong>策略类型范围</strong>：<code>精准否词（广告组）</code></li>
+          <li>🏷️ <strong>新增搜索词标签</strong>：<code>预估ACOS &lt; 目标ACOS</code></li>
+          <li>📍 <strong>否词层级</strong>：广告组</li>
+        </ul>
+        <br>即：当搜索词的<strong>预估ACOS 小于目标ACOS</strong>时，在广告组层级对该词执行精准否词。<br><br>
+        请确认以上识别是否正确？如需调整请直接说明。
+      </div>
+    </div>`;
+  chatBody.appendChild(el);
+  scrollBottom();
+}
+
+function appendAIPreview() {
+  const chatBody = document.getElementById('chatBody');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `
+    <div class="msg-avatar avatar-ai">AI</div>
+    <div class="msg-body">
+      <div class="msg-name">AI 优化助手</div>
+      <div class="bubble bubble-ai">参数已确认，以下为策略优化预览 👇</div>
+      <div class="preview-card">
+        <div class="preview-header">
+          <span class="preview-header-icon">🔧</span>
+          <span class="preview-header-text">优化预览 · <span>精准否词-高ACOS搜索词</span></span>
+        </div>
+        <div class="preview-body">
+          <div class="preview-section">
+            <div class="preview-section-title">策略类型</div>
+            <div class="cond-tags">
+              <span class="cond-tag cond-tag-purple">精准否词（广告组）</span>
+            </div>
+          </div>
+          <div class="preview-section">
+            <div class="preview-section-title">新增搜索词标签条件</div>
+            <div class="cond-tags">
+              <span class="cond-tag cond-tag-green">预估ACOS &lt; 目标ACOS</span>
+            </div>
+          </div>
+          <div class="preview-section">
+            <div class="preview-section-title">执行动作</div>
+            <div class="cond-tags">
+              <span class="cond-tag cond-tag-action">精准否词 · 否词层级 = 广告组</span>
+            </div>
+          </div>
+          <div class="preview-params">
+            <div class="param-item"><div class="param-label">影响策略数</div><div class="param-value">1 条</div></div>
+            <div class="param-item"><div class="param-label">生效时间</div><div class="param-value">立即生效</div></div>
+          </div>
+        </div>
+        <div class="preview-footer">
+          <button class="btn btn-default" onclick="chatState=1;appendUserMsg('需要再调整一下');showTyping(appendAIAdjust)">修改条件</button>
+          <button class="btn btn-primary" onclick="confirmOptimize(this)">✓ 确认优化</button>
+        </div>
+      </div>
+    </div>`;
+  chatBody.appendChild(el);
+  scrollBottom();
+}
+
+function appendAIAdjust() {
+  const chatBody = document.getElementById('chatBody');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `
+    <div class="msg-avatar avatar-ai">AI</div>
+    <div class="msg-body">
+      <div class="msg-name">AI 优化助手</div>
+      <div class="bubble bubble-ai">请告诉我需要调整的内容，例如修改搜索词标签条件、否词层级等。</div>
+    </div>`;
+  chatBody.appendChild(el);
+  chatState = 1;
+  scrollBottom();
+}
+
+function appendAIGeneric() {
+  const chatBody = document.getElementById('chatBody');
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `
+    <div class="msg-avatar avatar-ai">AI</div>
+    <div class="msg-body">
+      <div class="msg-name">AI 优化助手</div>
+      <div class="bubble bubble-ai">如需对其他否定类策略进行优化，请继续描述您的需求。</div>
+    </div>`;
+  chatBody.appendChild(el);
+  scrollBottom();
+}
+
+function confirmOptimize(btn) {
+  btn.disabled = true;
+  btn.textContent = '优化中...';
+  btn.style.opacity = '0.6';
+
+  setTimeout(() => {
+    const chatBody = document.getElementById('chatBody');
+    const el = document.createElement('div');
+    el.className = 'chat-msg';
+    el.innerHTML = `
+      <div class="msg-avatar avatar-ai">AI</div>
+      <div class="msg-body">
+        <div class="msg-name">AI 优化助手</div>
+        <div class="bubble bubble-ai">策略已成功优化 🎉</div>
+        <div class="success-box">
+          <span class="success-icon">✅</span>
+          <div class="success-text">
+            <strong>精准否词-高ACOS搜索词</strong> 策略已更新。<br>
+            新增搜索词标签：<strong>预估ACOS &lt; 目标ACOS</strong>，否词层级：广告组。<br>
+            <span class="success-link" onclick="closeChat();showDetail('精准否词-高ACOS搜索词','精准否词（广告组）')">点击查看策略详情 →</span>
+          </div>
+        </div>
+      </div>`;
+    chatBody.appendChild(el);
+    chatState = 3;
+    scrollBottom();
+  }, 1200);
+}
+
+function scrollBottom() {
+  const body = document.getElementById('chatBody');
+  body.scrollTop = body.scrollHeight;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function addCondRow(btn) {
+  const bd = btn.closest('.config-section-bd') || btn.parentElement;
+  const row = document.createElement('div');
+  row.className = 'cond-row';
+  row.innerHTML = `
+    <span class="cond-connector">AND</span>
+    <select class="field-sel"><option>搜索词标签</option><option>ACOS</option><option>点击量</option><option>曝光量</option></select>
+    <select class="op-sel"><option>=</option><option>≠</option><option>≤</option><option>≥</option></select>
+    <input class="val-input" type="text" placeholder="请输入值">
+    <span class="cond-del" onclick="this.parentElement.remove()" title="删除">×</span>`;
+  bd.insertBefore(row, btn);
+}
+
+// ===== STRATEGY DATA =====
+const STRATEGY_DATA = {
+  mature: {
+    '减少损失': [
+      { type: '精准否词（广告组）', color: '#7c3aed', items: [
+        { name: '精准否词-高ACOS搜索词', applied: true, chips: ['托管','成熟期','13周以后','有效曝光'] },
+        { name: '高转化否词策略', applied: false, chips: ['托管','成熟期','长期无转化'] }
+      ]},
+      { type: '精准否词（广告活动）', color: '#2563eb', items: [
+        { name: '活动层否词-全局屏蔽词', applied: true, chips: ['托管','成熟期','无效点击'] }
+      ]}
+    ],
+    '拓展流量': [
+      { type: '关键词拓展（广告组）', color: '#16a34a', items: [
+        { name: '成熟期关键词扩量', applied: true, chips: ['托管','成熟期','高相关词'] },
+        { name: '品类词拓展策略', applied: false, chips: ['手动','成熟期','竞品词'] }
+      ]},
+      { type: 'SP自动广告优化', color: '#0891b2', items: [
+        { name: '自动广告词收割', applied: true, chips: ['托管','成熟期','转化词提取'] }
+      ]}
+    ],
+    '调整竞价': [
+      { type: '竞价动态提升', color: '#ea580c', items: [
+        { name: '成熟期黄金时段竞价', applied: true, chips: ['托管','成熟期','时段溢价'] },
+        { name: '竞品词竞价保护', applied: true, chips: ['托管','成熟期','防竞品'] }
+      ]}
+    ],
+    '调整预算': [
+      { type: '预算动态分配', color: '#6366f1', items: [
+        { name: '成熟期预算平滑分配', applied: true, chips: ['托管','成熟期','每日均匀'] }
+      ]},
+      { type: '超额预算保障', color: '#be185d', items: [
+        { name: '高峰期预算扩容', applied: false, chips: ['手动','成熟期','节假日'] }
+      ]}
+    ]
+  },
+  new: {
+    '减少损失': [
+      { type: '否词根（广告组）', color: '#16a34a', items: [
+        { name: '词根否词-低相关词清除', applied: true, chips: ['托管','新品期','低相关词'] }
+      ]},
+      { type: '否品保护（广告组）', color: '#ea580c', items: [
+        { name: '新品否品保护', applied: false, chips: ['手动','新品期','竞品屏蔽'] }
+      ]}
+    ],
+    '拓展流量': [
+      { type: '新品关键词拓词', color: '#0891b2', items: [
+        { name: '新品种子词扩展', applied: true, chips: ['托管','新品期','核心词扩展'] },
+        { name: '竞品ASIN流量截取', applied: false, chips: ['手动','新品期','竞品词'] }
+      ]}
+    ],
+    '调整竞价': [
+      { type: '新品期竞价策略', color: '#7c3aed', items: [
+        { name: '新品期激进竞价', applied: true, chips: ['托管','新品期','曝光优先'] }
+      ]},
+      { type: '低效词降价', color: '#dc2626', items: [
+        { name: '零转化词降价策略', applied: false, chips: ['手动','新品期','节省预算'] }
+      ]}
+    ],
+    '调整预算': [
+      { type: '新品期预算保障', color: '#6366f1', items: [
+        { name: '新品每日预算底线保障', applied: true, chips: ['托管','新品期','确保曝光'] }
+      ]}
+    ]
+  },
+  promo: {
+    '减少损失': [
+      { type: '否品保护（广告组）', color: '#ea580c', items: [
+        { name: '否品保护-竞品ASIN屏蔽', applied: false, chips: ['托管','推广期','竞品屏蔽'] },
+        { name: '推广期精准否词', applied: true, chips: ['手动','推广期','高ACOS词屏蔽'] }
+      ]}
+    ],
+    '拓展流量': [
+      { type: '类目词拓展', color: '#16a34a', items: [
+        { name: '推广期类目大词拓展', applied: true, chips: ['托管','推广期','高流量词'] }
+      ]},
+      { type: '竞品词投放', color: '#0891b2', items: [
+        { name: '竞品品牌词截流', applied: true, chips: ['手动','推广期','竞品品牌'] },
+        { name: 'ASIN定向竞品', applied: false, chips: ['手动','推广期','竞品ASIN'] }
+      ]}
+    ],
+    '调整竞价': [
+      { type: '推广期竞价提升', color: '#7c3aed', items: [
+        { name: '推广期全时段溢价', applied: true, chips: ['托管','推广期','全天溢价'] },
+        { name: '高转化词加价', applied: true, chips: ['托管','推广期','转化率优化'] }
+      ]}
+    ],
+    '调整预算': [
+      { type: '推广期预算扩充', color: '#be185d', items: [
+        { name: '推广期预算双倍扩充', applied: false, chips: ['手动','推广期','加大投入'] }
+      ]},
+      { type: '渠道预算分配', color: '#6366f1', items: [
+        { name: 'SP/SD/SB预算均衡', applied: true, chips: ['托管','推广期','多渠道'] }
+      ]}
+    ]
+  },
+  decline: {
+    '减少损失': [
+      { type: '精准否词（父ASIN）', color: '#dc2626', items: [
+        { name: '父ASIN精准否词策略', applied: false, chips: ['托管','衰退期','低销量'] }
+      ]},
+      { type: '暂停推广品', color: '#6366f1', items: [
+        { name: '衰退期暂停策略', applied: true, chips: ['自动','衰退期','销量过低'] }
+      ]}
+    ],
+    '拓展流量': [
+      { type: '维持基础流量', color: '#16a34a', items: [
+        { name: '核心词保量策略', applied: true, chips: ['托管','衰退期','最低曝光保障'] }
+      ]}
+    ],
+    '调整竞价': [
+      { type: '衰退期降价策略', color: '#ea580c', items: [
+        { name: '全线竞价下调20%', applied: true, chips: ['托管','衰退期','成本控制'] }
+      ]},
+      { type: '亏损词停投', color: '#dc2626', items: [
+        { name: '长期亏损词暂停', applied: false, chips: ['手动','衰退期','止损'] }
+      ]}
+    ],
+    '调整预算': [
+      { type: '衰退期预算收紧', color: '#6366f1', items: [
+        { name: '衰退期预算削减50%', applied: true, chips: ['托管','衰退期','减少投入'] },
+        { name: '日预算上限管控', applied: true, chips: ['自动','衰退期','成本管控'] }
+      ]}
+    ]
+  }
+};
+
+// ===== CARD VIEW FUNCTIONS =====
+function selectLifecycle(card) {
+  document.querySelectorAll('.lifecycle-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  renderPanel(card.dataset.lifecycle, '减少损失');
+}
+
+function renderPanel(lifecycle, activeTab) {
+  const data = STRATEGY_DATA[lifecycle] || {};
+  const tabs = ['减少损失', '拓展流量', '调整竞价', '调整预算'];
+  let html = '<div class="object-tabs">';
+  tabs.forEach(tab => {
+    html += `<button class="object-tab${tab === activeTab ? ' active' : ''}" onclick="switchPanelTab(this,'${lifecycle}','${tab}')">${tab}</button>`;
+  });
+  html += '</div><div class="st-list">';
+  const groups = data[activeTab] || [];
+  if (groups.length === 0) {
+    html += '</div><div style="padding:20px 0;text-align:center;color:#8c9ab0;font-size:13px;">暂无该类型策略</div>';
+  } else {
+    groups.forEach(group => {
+      const eName = group.type.replace(/'/g, "\\'");
+      html += `<div class="st-item open"><div class="st-header" onclick="toggleStrategyType(event,this.closest('.st-item'))"><span class="st-dot" style="background:${group.color};"></span><span class="st-name">${group.type}</span><span class="st-count-badge">${group.items.length}</span><span class="st-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></span></div><div class="st-body"><div class="sc-list">`;
+      group.items.forEach(item => {
+        const n = item.name.replace(/'/g, "\\'");
+        const chips = item.chips.map(c => `<span class="desc-chip">${c}</span>`).join('');
+        const badge = item.applied
+          ? '<span class="sc-badge-applied">已应用</span>'
+          : '<span class="sc-badge-unapplied">未应用</span><button class="sc-apply-btn">应用</button>';
+        html += `<div class="strategy-card"><div class="sc-top"><div class="sc-name" onclick="showDetail('${n}','${eName}')">${item.name}</div><div class="sc-right">${badge}</div></div><div class="sc-desc">${chips}</div><div class="sc-actions"><button class="sc-action-link" onclick="showDetail('${n}','${eName}')">查看</button><button class="sc-action-link" onclick="showDetail('${n}','${eName}')">编辑</button><button class="sc-action-link del">删除</button></div></div>`;
+      });
+      html += '</div></div></div>';
+    });
+    html += '</div>';
+  }
+  document.getElementById('panelBody').innerHTML = html;
+}
+
+function switchPanelTab(btn, lifecycle, tab) {
+  renderPanel(lifecycle, tab);
+}
+
+// ===== VIEW SWITCHING =====
+function switchView(viewType) {
+  activeView = viewType;
+  const tableView = document.getElementById('tableViewContainer');
+  const cardView = document.getElementById('cardViewContainer');
+  const viewBtnTable = document.getElementById('viewBtnTable');
+  const viewBtnCard = document.getElementById('viewBtnCard');
+  if (viewType === 'table') {
+    tableView.style.display = 'block';
+    cardView.style.display = 'none';
+    viewBtnTable.classList.add('active');
+    viewBtnCard.classList.remove('active');
+  } else {
+    tableView.style.display = 'none';
+    cardView.style.display = 'block';
+    viewBtnTable.classList.remove('active');
+    viewBtnCard.classList.add('active');
+    renderPanel('mature', '减少损失');
+  }
+}
+
+function selectRegion(btn) {
+  document.querySelectorAll('.group-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function toggleStrategyType(event, item) {
+  event.stopPropagation();
+  item.classList.toggle('open');
+}
+
+// ===== SUBNAV FLYOUT =====
+function toggleAdSubnav(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const flyout = document.getElementById('adSubnav');
+  const anchor = document.getElementById('navItemAd');
+  const rect = anchor.getBoundingClientRect();
+  flyout.style.top = rect.top + 'px';
+  const isOpen = flyout.classList.contains('open');
+  flyout.classList.toggle('open');
+  if (!isOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', function closeHandler() {
+        flyout.classList.remove('open');
+        document.removeEventListener('click', closeHandler);
+      });
+    }, 10);
+  }
+}
+
+// ===== NAV WIP TOAST =====
+function wipToast(e) {
+  e.preventDefault();
+  const t = document.getElementById('navToast');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+<div class="nav-toast" id="navToast">该页面正在建设中，敬请期待 🚧</div>
+</body>
+</html>

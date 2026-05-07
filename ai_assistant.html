@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 助手 · 烽火广告</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#1d2129;font-size:14px;}
+
+/* ===== LAYOUT ===== */
+.layout{display:flex;height:100vh;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:52px;background:#fff;border-bottom:1px solid #e8ecf0;display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.content-wrap{flex:1;display:flex;overflow:hidden;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:64px;background:#1a1c2e;display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.sidebar-logo{padding:14px 0 12px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.07);width:100%;margin-bottom:4px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:18px;height:18px;fill:#fff;}
+.sidebar-nav{display:flex;flex-direction:column;align-items:center;width:100%;padding:4px 0;flex:1;}
+.nav-item{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 0;font-size:11px;color:rgba(255,255,255,.45);cursor:pointer;transition:all .18s;position:relative;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+.nav-item.active{color:#fff;background:rgba(14,165,233,.2);border-left-color:#0ea5e9;}
+.nav-item.wip{opacity:.45;cursor:not-allowed;}
+.nav-item.wip:hover{color:rgba(255,255,255,.45);background:none;}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;}
+.nav-item .ni-label{font-size:10px;letter-spacing:.2px;}
+.ni-badge{color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;letter-spacing:.5px;margin-bottom:1px;}
+.ni-badge-ad{background:#e8473f;}
+.ni-badge-ai{background:linear-gradient(135deg,#0ea5e9,#7c3aed);}
+.sidebar-footer{padding:12px 0 16px;border-top:1px solid rgba(255,255,255,.07);width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.user-name-small{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.2px;}
+
+/* ===== TOPBAR ===== */
+.topbar-breadcrumb{font-size:13px;color:#8c9ab0;display:flex;align-items:center;gap:6px;}
+.topbar-breadcrumb .current{color:#1d2129;font-weight:600;}
+.topbar-breadcrumb .sep{color:#d9dfe8;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.topbar-icon{width:34px;height:34px;border-radius:7px;border:1px solid #e8ecf0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#595f6e;transition:all .2s;position:relative;}
+.topbar-icon:hover{border-color:#0ea5e9;color:#0ea5e9;}
+.topbar-icon svg{width:16px;height:16px;}
+.task-btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:7px;border:1px solid #e8ecf0;background:#fff;font-size:12px;font-weight:600;color:#595f6e;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.task-btn:hover,.task-btn.active{border-color:#0ea5e9;color:#0ea5e9;background:#f0f9ff;}
+.task-btn svg{width:14px;height:14px;}
+.task-count-badge{background:#e8473f;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;}
+
+/* ===== CHAT AREA ===== */
+.chat-area{flex:1;display:flex;flex-direction:column;min-width:0;transition:all .3s;}
+.chat-body{flex:1;overflow-y:auto;padding:20px 0;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth;}
+
+/* Welcome */
+.chat-welcome{display:flex;flex-direction:column;align-items:center;padding:32px 40px 20px;max-width:740px;margin:0 auto;width:100%;}
+.welcome-logo{width:64px;height:64px;background:linear-gradient(135deg,#0ea5e9,#7c3aed);border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 28px rgba(124,58,237,.28);margin-bottom:16px;}
+.welcome-logo svg{width:32px;height:32px;fill:#fff;}
+.welcome-h{font-size:20px;font-weight:800;color:#1d2129;margin-bottom:8px;letter-spacing:-.3px;}
+.welcome-p{font-size:13px;color:#8c9ab0;line-height:1.75;text-align:center;max-width:480px;margin-bottom:20px;}
+.cap-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px;}
+.cap-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#fff;border:1px solid #e8ecf0;border-radius:100px;font-size:12px;color:#595f6e;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.cap-chip svg{width:13px;height:13px;}
+.qs-title{font-size:12px;font-weight:700;color:#8c9ab0;letter-spacing:.4px;text-transform:uppercase;margin-bottom:12px;align-self:flex-start;}
+.qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.qs-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .22s;text-align:left;}
+.qs-card:hover{border-color:#0ea5e9;box-shadow:0 4px 14px rgba(14,165,233,.12);transform:translateY(-1px);}
+.qs-card-icon{font-size:18px;margin-bottom:7px;}
+.qs-card-title{font-size:13px;font-weight:700;color:#1d2129;margin-bottom:3px;}
+.qs-card-desc{font-size:11px;color:#8c9ab0;line-height:1.5;}
+
+/* Messages */
+.chat-msg-wrap{padding:0 24px;max-width:860px;margin:0 auto;width:100%;}
+.chat-msg{display:flex;gap:10px;align-items:flex-start;}
+.chat-msg.user{flex-direction:row-reverse;}
+.msg-avatar{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.avatar-ai{background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;}
+.avatar-user{background:#ede9fe;color:#7c3aed;}
+.msg-body{max-width:600px;}
+.chat-msg.user .msg-body{align-items:flex-end;display:flex;flex-direction:column;}
+.msg-name{font-size:11px;color:#8c9ab0;margin-bottom:4px;}
+.chat-msg.user .msg-name{text-align:right;}
+.bubble{padding:11px 15px;border-radius:12px;font-size:13px;line-height:1.75;word-break:break-word;}
+.bubble-ai{background:#fff;color:#1d2129;border-bottom-left-radius:4px;border:1px solid #f0f3f8;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.bubble-user{background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;border-bottom-right-radius:4px;}
+.bubble ul{padding-left:16px;margin-top:6px;}
+.bubble li{margin-bottom:5px;}
+.bubble strong{font-weight:600;}
+.bubble code{background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:12px;font-family:'SF Mono','Monaco',monospace;}
+
+/* Typing indicator */
+.typing{display:flex;align-items:center;gap:5px;padding:4px 2px;}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:#c0c9d4;animation:typing .9s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:.15s;}
+.typing-dot:nth-child(3){animation-delay:.3s;}
+@keyframes typing{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+
+/* ===== ANALYSIS CARD ===== */
+.analysis-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:12px;overflow:hidden;margin-top:10px;box-shadow:0 3px 12px rgba(0,0,0,.07);}
+.analysis-header{padding:14px 18px;background:linear-gradient(135deg,#f0f9ff,#faf5ff);border-bottom:1px solid #e8ecf0;display:flex;align-items:center;justify-content:space-between;}
+.analysis-sku{font-size:16px;font-weight:800;color:#1d2129;display:flex;align-items:center;gap:10px;}
+.analysis-sku-badge{background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;letter-spacing:.4px;}
+.analysis-period{font-size:11px;color:#8c9ab0;}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#f0f3f8;}
+.metric-item{background:#fff;padding:14px 16px;}
+.metric-label{font-size:11px;color:#8c9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.metric-value{font-size:20px;font-weight:800;color:#1d2129;line-height:1.2;}
+.metric-value.warn{color:#d97706;}
+.metric-delta{font-size:11px;margin-top:3px;display:flex;align-items:center;gap:3px;}
+.delta-up{color:#16a34a;}
+.delta-down{color:#dc2626;}
+.delta-warn{color:#d97706;}
+.analysis-body{padding:16px 18px;}
+.analysis-section{margin-bottom:14px;}
+.analysis-section:last-child{margin-bottom:0;}
+.section-hd{font-size:12px;font-weight:800;color:#1d2129;margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+.issue-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:7px;margin-bottom:6px;font-size:12px;color:#1d2129;line-height:1.6;}
+.issue-item:last-child{margin-bottom:0;}
+.issue-icon{flex-shrink:0;font-size:13px;line-height:1.5;}
+.suggest-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;margin-bottom:6px;font-size:12px;color:#1d2129;line-height:1.6;}
+.suggest-item:last-child{margin-bottom:0;}
+.suggest-item .num{flex-shrink:0;background:#16a34a;color:#fff;font-size:10px;font-weight:800;width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.analysis-cta{padding:14px 18px;border-top:1px solid #f0f3f8;background:#fafbfc;display:flex;align-items:center;justify-content:space-between;}
+.analysis-cta-text{font-size:12px;color:#8c9ab0;}
+.btn-generate{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;box-shadow:0 3px 10px rgba(14,165,233,.3);}
+.btn-generate:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(14,165,233,.4);}
+.btn-generate:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.btn-generate svg{width:13px;height:13px;}
+
+/* PDF generation progress */
+.pdf-progress{background:#fff;border:1.5px solid #e8ecf0;border-radius:10px;padding:16px 18px;margin-top:10px;}
+.pdf-progress-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.pdf-icon{width:36px;height:36px;background:#f0f9ff;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pdf-icon svg{width:18px;height:18px;color:#0ea5e9;}
+.pdf-title{font-size:13px;font-weight:700;color:#1d2129;}
+.pdf-subtitle{font-size:11px;color:#8c9ab0;margin-top:1px;}
+.progress-bar-wrap{height:6px;background:#f0f3f8;border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.progress-bar{height:100%;background:linear-gradient(90deg,#0ea5e9,#7c3aed);border-radius:3px;width:0;transition:width .3s ease;}
+.progress-steps{display:flex;gap:16px;flex-wrap:wrap;}
+.progress-step{display:flex;align-items:center;gap:5px;font-size:11px;color:#8c9ab0;}
+.progress-step.done{color:#16a34a;}
+.progress-step.active{color:#0ea5e9;}
+.step-dot{width:6px;height:6px;border-radius:50%;background:#d9dfe8;flex-shrink:0;}
+.progress-step.done .step-dot{background:#16a34a;}
+.progress-step.active .step-dot{background:#0ea5e9;animation:pulse-dot 1s infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.3;}}
+.download-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-top:10px;}
+.download-box-icon{font-size:24px;flex-shrink:0;}
+.download-box-info{flex:1;}
+.download-filename{font-size:13px;font-weight:700;color:#1d2129;}
+.download-meta{font-size:11px;color:#8c9ab0;margin-top:2px;}
+.btn-download{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;white-space:nowrap;}
+.btn-download:hover{background:#15803d;}
+.btn-download svg{width:13px;height:13px;}
+
+/* ===== TASK CONFIRM CARD ===== */
+.task-confirm-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:12px;overflow:hidden;margin-top:10px;box-shadow:0 3px 12px rgba(0,0,0,.07);}
+.task-confirm-header{padding:12px 16px;background:linear-gradient(135deg,#f0f9ff,#f0fdf4);border-bottom:1px solid #e8ecf0;display:flex;align-items:center;gap:9px;}
+.task-confirm-header-icon{font-size:16px;}
+.task-confirm-header-title{font-size:13px;font-weight:700;color:#1d2129;}
+.task-config-list{padding:14px 16px;display:flex;flex-direction:column;gap:9px;}
+.task-config-row{display:flex;align-items:flex-start;gap:10px;font-size:12px;}
+.task-config-label{color:#8c9ab0;width:80px;flex-shrink:0;padding-top:2px;}
+.task-config-value{color:#1d2129;font-weight:600;flex:1;line-height:1.5;}
+.task-confirm-footer{padding:12px 16px;border-top:1px solid #f0f3f8;background:#fafbfc;display:flex;gap:10px;}
+.btn-confirm-task{flex:1;padding:8px 0;background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;}
+.btn-confirm-task:hover{opacity:.9;transform:translateY(-1px);}
+.btn-modify-task{padding:8px 16px;background:#fff;color:#595f6e;border:1px solid #d9dfe8;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s;}
+.btn-modify-task:hover{border-color:#0ea5e9;color:#0ea5e9;}
+
+/* Task card in chat (after creation) */
+.task-chat-card{background:#fff;border:1.5px solid #bfdbfe;border-radius:10px;overflow:hidden;margin-top:10px;}
+.task-chat-card-header{padding:10px 14px;background:#eff6ff;display:flex;align-items:center;gap:8px;}
+.task-chat-card-status{width:8px;height:8px;border-radius:50%;background:#16a34a;flex-shrink:0;box-shadow:0 0 0 2px #dcfce7;animation:pulse-dot 2s infinite;}
+.task-chat-card-name{font-size:13px;font-weight:700;color:#1d2129;flex:1;}
+.task-chat-card-body{padding:10px 14px;}
+.task-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.task-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;}
+.chip-time{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.chip-channel{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
+.chip-scope{background:#faf5ff;color:#7c3aed;border:1px solid #e9d5ff;}
+.task-chat-actions{display:flex;gap:8px;}
+.tca-btn{flex:1;padding:6px 0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;border:1px solid #e8ecf0;background:#fff;color:#595f6e;display:flex;align-items:center;justify-content:center;gap:5px;}
+.tca-btn:hover{border-color:#0ea5e9;color:#0ea5e9;}
+.tca-btn.del:hover{border-color:#dc2626;color:#dc2626;}
+.tca-btn svg{width:12px;height:12px;}
+.tca-primary{background:#eff6ff;border-color:#bfdbfe;color:#2563eb;}
+.tca-primary:hover{background:#2563eb;color:#fff;border-color:#2563eb;}
+
+/* ===== TASK PANEL ===== */
+.task-panel{width:0;flex-shrink:0;overflow:hidden;transition:width .3s cubic-bezier(.23,1,.32,1);background:#fff;border-left:1px solid #e8ecf0;display:flex;flex-direction:column;}
+.task-panel.open{width:320px;}
+.tp-header{padding:14px 16px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.tp-title{font-size:14px;font-weight:700;color:#1d2129;flex:1;}
+.tp-new-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+.tp-new-btn:hover{background:#2563eb;color:#fff;border-color:#2563eb;}
+.tp-close{width:28px;height:28px;border-radius:6px;border:1px solid #e8ecf0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8c9ab0;font-size:16px;transition:all .2s;line-height:1;flex-shrink:0;}
+.tp-close:hover{background:#f5f7fa;color:#1d2129;}
+.tp-tabs{display:flex;border-bottom:1px solid #f0f3f8;flex-shrink:0;}
+.tp-tab{flex:1;padding:10px 0;font-size:12px;font-weight:600;color:#8c9ab0;text-align:center;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tp-tab.active{color:#0ea5e9;border-bottom-color:#0ea5e9;}
+.tp-body{flex:1;overflow-y:auto;}
+.tp-panel{display:none;padding:12px;}
+.tp-panel.active{display:block;}
+.tp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;color:#8c9ab0;text-align:center;}
+.tp-empty svg{width:36px;height:36px;opacity:.3;margin-bottom:10px;}
+.tp-empty p{font-size:12px;line-height:1.7;}
+
+/* Task item in panel */
+.tp-task-item{background:#fafbfc;border:1.5px solid #e8ecf0;border-radius:9px;padding:12px 14px;margin-bottom:8px;transition:border-color .2s;}
+.tp-task-item:hover{border-color:#bfdbfe;}
+.tp-task-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.tp-task-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-active{background:#16a34a;box-shadow:0 0 0 2px #dcfce7;}
+.dot-paused{background:#d97706;box-shadow:0 0 0 2px #fef3c7;}
+.tp-task-name{font-size:13px;font-weight:700;color:#1d2129;flex:1;}
+.tp-task-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
+.tp-task-meta{font-size:11px;color:#8c9ab0;margin-bottom:9px;display:flex;gap:14px;}
+.tp-task-actions{display:flex;gap:6px;}
+.tp-act-btn{flex:1;padding:5px 0;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;border:1px solid #e8ecf0;background:#fff;color:#595f6e;display:flex;align-items:center;justify-content:center;gap:4px;}
+.tp-act-btn:hover{border-color:#0ea5e9;color:#0ea5e9;}
+.tp-act-btn.del{color:#8c9ab0;}
+.tp-act-btn.del:hover{border-color:#dc2626;color:#dc2626;}
+.tp-act-btn svg{width:11px;height:11px;}
+
+/* History items */
+.history-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f0f3f8;}
+.history-item:last-child{border-bottom:none;}
+.history-status-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:11px;}
+.hs-success{background:#dcfce7;color:#16a34a;}
+.hs-fail{background:#fee2e2;color:#dc2626;}
+.history-info{flex:1;}
+.history-task-name{font-size:12px;font-weight:600;color:#1d2129;margin-bottom:2px;}
+.history-time{font-size:11px;color:#8c9ab0;}
+.history-msg{font-size:11px;color:#595f6e;margin-top:3px;line-height:1.5;}
+.history-fail-msg{color:#dc2626;}
+
+/* ===== CHAT INPUT ===== */
+.chat-footer{border-top:1px solid #f0f3f8;padding:14px 24px;flex-shrink:0;background:#fff;max-width:860px;margin:0 auto;width:100%;align-self:center;}
+.input-box{background:#f5f7fa;border:1.5px solid #e8ecf0;border-radius:12px;padding:12px 15px;transition:all .2s;}
+.input-box:focus-within{border-color:#0ea5e9;background:#fff;box-shadow:0 0 0 3px rgba(14,165,233,.1);}
+.input-row{display:flex;gap:10px;align-items:flex-end;}
+.chat-textarea{flex:1;border:none;background:transparent;font-size:13px;color:#1d2129;resize:none;outline:none;min-height:20px;max-height:110px;font-family:inherit;line-height:1.6;}
+.chat-textarea::placeholder{color:#c0c9d4;}
+.send-btn{background:linear-gradient(135deg,#0ea5e9,#7c3aed);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;font-family:inherit;transition:all .2s;box-shadow:0 3px 10px rgba(14,165,233,.3);}
+.send-btn:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(14,165,233,.4);}
+.send-btn:active{transform:translateY(0);}
+.send-btn svg{width:13px;height:13px;}
+.input-tips{font-size:11px;color:#c0c9d4;margin-top:7px;display:flex;align-items:center;gap:8px;}
+.tip-tag{background:#e8ecf0;color:#8c9ab0;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;}
+
+/* ===== DELETE CONFIRM MODAL ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal-box{background:#fff;border-radius:14px;padding:28px 28px 24px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:scale(.95);transition:transform .25s;}
+.modal-overlay.show .modal-box{transform:scale(1);}
+.modal-icon{width:48px;height:48px;background:#fee2e2;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+.modal-icon svg{width:24px;height:24px;color:#dc2626;}
+.modal-title{font-size:16px;font-weight:800;color:#1d2129;margin-bottom:8px;}
+.modal-desc{font-size:13px;color:#595f6e;line-height:1.7;margin-bottom:6px;}
+.modal-warn{font-size:12px;color:#d97706;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;margin-bottom:20px;line-height:1.6;}
+.modal-actions{display:flex;gap:10px;}
+.btn-modal-cancel{flex:1;padding:10px 0;background:#fff;color:#595f6e;border:1px solid #d9dfe8;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;}
+.btn-modal-cancel:hover{border-color:#8c9ab0;color:#1d2129;}
+.btn-modal-delete{flex:1;padding:10px 0;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .2s;}
+.btn-modal-delete:hover{background:#b91c1c;}
+
+/* ===== SUBNAV FLYOUT ===== */
+.subnav-flyout{position:fixed;left:64px;top:0;background:#1f2241;min-width:168px;border-radius:0 10px 10px 0;box-shadow:6px 0 24px rgba(0,0,0,.28);z-index:300;padding:8px 0;display:none;border:1px solid rgba(255,255,255,.06);border-left:none;}
+.subnav-flyout.open{display:block;}
+.subnav-hd{padding:6px 16px 8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px;}
+.subnav-link{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13px;color:rgba(255,255,255,.6);text-decoration:none;transition:all .15s;border-left:3px solid transparent;}
+.subnav-link:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.05);}
+.subnav-link.active{color:#fff;background:rgba(124,58,237,.2);border-left-color:#7c3aed;}
+.subnav-link svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
+.subnav-link.active svg{opacity:1;}
+
+/* ===== TOAST ===== */
+.nav-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.75);color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:all .3s;z-index:9999;white-space:nowrap;}
+.nav-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== UTILITY ===== */
+.hidden{display:none!important;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#d9dfe8;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#bfbfbf;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="#" onclick="toggleAdSubnav(event)" title="广告" id="navItemAd">
+        <span class="ni-badge ni-badge-ad">AD</span>
+        <span class="ni-label">广告</span>
+      </a>
+      <a class="nav-item active" href="ai_assistant.html" title="AI 助手">
+        <span class="ni-badge ni-badge-ai">AI</span>
+        <span class="ni-label">AI</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="商品">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="ni-label">商品</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="AMC">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>
+        <span class="ni-label">AMC</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="店铺">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="ni-label">店铺</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="品牌">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="ni-label">品牌</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="用户">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="ni-label">用户</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="工具">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        <span class="ni-label">工具</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">杨</div>
+      <div class="user-name-small">杨修瑛</div>
+    </div>
+  </aside>
+
+  <!-- Subnav flyout -->
+  <div class="subnav-flyout" id="adSubnav">
+    <div class="subnav-hd">广告</div>
+    <a class="subnav-link" href="ad_manager.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      广告管理
+    </a>
+    <a class="subnav-link" href="strategy_center_for_customer.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      策略中心
+    </a>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span>AI</span><span class="sep">/</span>
+        <span class="current">AI 助手</span>
+      </div>
+      <div class="topbar-right">
+        <button class="task-btn" id="taskPanelBtn" onclick="toggleTaskPanel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          定时任务
+          <span class="task-count-badge hidden" id="taskCountBadge">0</span>
+        </button>
+        <div class="topbar-icon" title="帮助">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="topbar-icon" title="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CONTENT WRAP ===== -->
+    <div class="content-wrap">
+
+      <!-- CHAT AREA -->
+      <div class="chat-area" style="display:flex;flex-direction:column;">
+        <div class="chat-body" id="chatBody">
+
+          <!-- Welcome -->
+          <div id="chatWelcome" class="chat-welcome">
+            <div class="welcome-logo">
+              <svg viewBox="0 0 24 24" width="32" height="32"><path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0015.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z" fill="#fff"/></svg>
+            </div>
+            <div class="welcome-h">烽火广告 AI 助手</div>
+            <div class="welcome-p">我可以帮您诊断商品广告表现、生成优化建议报告，还能创建定时数据巡检任务并自动推送到钉钉、邮件等渠道。</div>
+            <div class="cap-chips">
+              <div class="cap-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                广告全局诊断
+              </div>
+              <div class="cap-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                生成分析报告 PDF
+              </div>
+              <div class="cap-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                定时任务创建
+              </div>
+              <div class="cap-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                推送钉钉 / 邮件
+              </div>
+            </div>
+            <div class="qs-title">快速开始</div>
+            <div class="qs-grid">
+              <div class="qs-card" onclick="useQuickStart('analysis')">
+                <div class="qs-card-icon">📊</div>
+                <div class="qs-card-title">广告诊断 + 优化建议</div>
+                <div class="qs-card-desc">分析下货号 HB1026 的广告情况和优化建议</div>
+              </div>
+              <div class="qs-card" onclick="useQuickStart('schedule')">
+                <div class="qs-card-icon">⏰</div>
+                <div class="qs-card-title">创建定时巡检任务</div>
+                <div class="qs-card-desc">每天早上 9 点巡检广告活动数据，结果发到钉钉</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /chatBody -->
+
+        <!-- Chat Footer -->
+        <div class="chat-footer">
+          <div class="input-box">
+            <div class="input-row">
+              <textarea class="chat-textarea" id="chatInput" placeholder="输入您的需求，例如：分析 HB1026 的广告情况..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+              <button class="send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                发送
+              </button>
+            </div>
+          </div>
+          <div class="input-tips">
+            <span class="tip-tag">Enter</span> 发送 &nbsp;
+            <span class="tip-tag">Shift+Enter</span> 换行
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TASK PANEL ===== -->
+      <div class="task-panel" id="taskPanel">
+        <div class="tp-header">
+          <span class="tp-title">定时任务</span>
+          <button class="tp-new-btn" onclick="showToast('请通过 AI 对话创建定时任务')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>
+            新建
+          </button>
+          <div class="tp-close" onclick="toggleTaskPanel()">×</div>
+        </div>
+        <div class="tp-tabs">
+          <div class="tp-tab active" onclick="switchTPTab('tasks',this)">活跃任务</div>
+          <div class="tp-tab" onclick="switchTPTab('history',this)">执行历史</div>
+        </div>
+        <div class="tp-body">
+          <div class="tp-panel active" id="tp-tasks">
+            <div class="tp-empty" id="tpEmptyState">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <p>暂无定时任务<br>通过 AI 对话快速创建</p>
+            </div>
+            <!-- task items injected here -->
+          </div>
+          <div class="tp-panel" id="tp-history">
+            <div class="tp-empty" id="tpHistoryEmpty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <p>暂无执行记录<br>任务执行后将在此显示</p>
+            </div>
+            <!-- history items injected here -->
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-wrap -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ===== DELETE CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+    </div>
+    <div class="modal-title">确认删除此定时任务？</div>
+    <div class="modal-desc">删除后该任务将立即停止运行，<strong id="deleteTaskName">广告活动数据每日巡检</strong> 不会再执行或推送消息。</div>
+    <div class="modal-warn">⚠️ 历史执行记录将被保留，但此操作不可撤销。</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeDeleteModal()">取消</button>
+      <button class="btn-modal-delete" onclick="confirmDelete()">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-toast" id="navToast"></div>
+
+<script>
+// ===== STATE =====
+let pendingAction = null; // 'report_pending' | 'task_confirming' | null
+let tasks = [];
+let taskIdCounter = 1;
+let deleteTargetId = null;
+let historyRecords = [];
+
+// ===== SUBNAV FLYOUT =====
+function toggleAdSubnav(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const flyout = document.getElementById('adSubnav');
+  const anchor = document.getElementById('navItemAd');
+  const rect = anchor.getBoundingClientRect();
+  flyout.style.top = rect.top + 'px';
+  const isOpen = flyout.classList.contains('open');
+  flyout.classList.toggle('open');
+  if (!isOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', function closeHandler() {
+        flyout.classList.remove('open');
+        document.removeEventListener('click', closeHandler);
+      });
+    }, 10);
+  }
+}
+
+// ===== NAV / WIP =====
+function wipToast(e) {
+  e.preventDefault();
+  showToast('该功能正在建设中，敬请期待 🚧');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('navToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== TASK PANEL =====
+function toggleTaskPanel() {
+  const panel = document.getElementById('taskPanel');
+  const btn = document.getElementById('taskPanelBtn');
+  panel.classList.toggle('open');
+  btn.classList.toggle('active');
+}
+
+function openTaskPanel() {
+  const panel = document.getElementById('taskPanel');
+  const btn = document.getElementById('taskPanelBtn');
+  panel.classList.add('open');
+  btn.classList.add('active');
+}
+
+function switchTPTab(id, el) {
+  document.querySelectorAll('.tp-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tp-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tp-' + id).classList.add('active');
+}
+
+function updateTaskCount() {
+  const badge = document.getElementById('taskCountBadge');
+  if (tasks.length > 0) {
+    badge.textContent = tasks.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// ===== DELETE MODAL =====
+function confirmDeleteTask(taskId) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  deleteTargetId = taskId;
+  document.getElementById('deleteTaskName').textContent = task.name;
+  document.getElementById('deleteModal').classList.add('show');
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('show');
+  deleteTargetId = null;
+}
+
+function confirmDelete() {
+  if (deleteTargetId === null) return;
+  tasks = tasks.filter(t => t.id !== deleteTargetId);
+  renderTaskPanel();
+  updateTaskCount();
+  closeDeleteModal();
+  showToast('定时任务已删除');
+  // Remove chat task cards for this task
+  document.querySelectorAll('.task-chat-card[data-task-id="' + deleteTargetId + '"]').forEach(el => {
+    el.style.opacity = '0.4';
+    el.style.pointerEvents = 'none';
+    const badge = el.querySelector('.task-chat-card-status');
+    if (badge) { badge.style.background = '#d9dfe8'; badge.style.boxShadow = 'none'; badge.style.animation = 'none'; }
+    const nameEl = el.querySelector('.task-chat-card-name');
+    if (nameEl) nameEl.style.textDecoration = 'line-through';
+  });
+}
+
+// ===== RENDER TASK PANEL =====
+function renderTaskPanel() {
+  const container = document.getElementById('tp-tasks');
+  const emptyState = document.getElementById('tpEmptyState');
+
+  // Remove existing task items (keep empty state)
+  container.querySelectorAll('.tp-task-item').forEach(el => el.remove());
+
+  if (tasks.length === 0) {
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  emptyState.classList.add('hidden');
+
+  tasks.forEach(task => {
+    const el = document.createElement('div');
+    el.className = 'tp-task-item';
+    el.dataset.taskId = task.id;
+    el.innerHTML = `
+      <div class="tp-task-top">
+        <div class="tp-task-status-dot dot-active"></div>
+        <div class="tp-task-name">${escHtml(task.name)}</div>
+      </div>
+      <div class="tp-task-chips">
+        <span class="task-chip chip-time">⏰ ${escHtml(task.schedule)}</span>
+        <span class="task-chip chip-channel">📲 ${escHtml(task.channel)}</span>
+      </div>
+      <div class="tp-task-meta">
+        <span>创建于 ${escHtml(task.createdAt)}</span>
+        <span>下次 ${escHtml(task.nextRun)}</span>
+      </div>
+      <div class="tp-task-actions">
+        <button class="tp-act-btn" onclick="showToast('编辑功能即将上线')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          编辑
+        </button>
+        <button class="tp-act-btn del" onclick="confirmDeleteTask(${task.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+          删除
+        </button>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+function renderHistoryPanel() {
+  const container = document.getElementById('tp-history');
+  const emptyState = document.getElementById('tpHistoryEmpty');
+  container.querySelectorAll('.history-item').forEach(el => el.remove());
+
+  if (historyRecords.length === 0) {
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  emptyState.classList.add('hidden');
+
+  historyRecords.forEach(rec => {
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    el.innerHTML = `
+      <div class="history-status-icon ${rec.success ? 'hs-success' : 'hs-fail'}">${rec.success ? '✓' : '✗'}</div>
+      <div class="history-info">
+        <div class="history-task-name">${escHtml(rec.taskName)}</div>
+        <div class="history-time">${escHtml(rec.time)}</div>
+        <div class="history-msg ${rec.success ? '' : 'history-fail-msg'}">${escHtml(rec.msg)}</div>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+// ===== CHAT CORE =====
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+function useQuickStart(type) {
+  const texts = {
+    analysis: '分析下货号HB1026的广告情况和优化建议',
+    schedule: '帮我创建一个每天早上 9 点巡检广告活动数据的任务，结果发到钉钉'
+  };
+  const input = document.getElementById('chatInput');
+  input.value = texts[type];
+  autoResize(input);
+  sendMessage();
+}
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  document.getElementById('chatWelcome').style.display = 'none';
+  appendUserMsg(text);
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Route to appropriate flow
+  const lower = text.toLowerCase();
+  if (pendingAction === 'report_pending' && /是|好|需要|生成|报告/.test(lower)) {
+    pendingAction = null;
+    showTyping(() => appendPDFGeneration());
+  } else if (pendingAction === 'task_confirming' && /确认|好的|是|创建|可以/.test(lower)) {
+    pendingAction = null;
+    showTyping(() => appendTaskCreated());
+  } else if (/hb1026|分析.*广告|广告.*分析|诊断|货号/.test(lower)) {
+    showTyping(() => appendAnalysisReport());
+  } else if (/任务|巡检|定时|每天.*9|09.*点|钉钉.*任务|任务.*钉钉/.test(lower)) {
+    showTyping(() => appendTaskConfirm());
+  } else {
+    showTyping(() => appendGenericReply(text));
+  }
+}
+
+function appendUserMsg(text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-msg-wrap';
+  wrap.innerHTML = `
+    <div class="chat-msg user">
+      <div class="msg-avatar avatar-user">杨</div>
+      <div class="msg-body">
+        <div class="msg-name">我</div>
+        <div class="bubble bubble-user">${escHtml(text)}</div>
+      </div>
+    </div>`;
+  document.getElementById('chatBody').appendChild(wrap);
+  scrollBottom();
+}
+
+function showTyping(callback) {
+  const chatBody = document.getElementById('chatBody');
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-msg-wrap';
+  wrap.id = 'typingIndicator';
+  wrap.innerHTML = `
+    <div class="chat-msg">
+      <div class="msg-avatar avatar-ai">AI</div>
+      <div class="msg-body">
+        <div class="msg-name">AI 助手</div>
+        <div class="bubble bubble-ai"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>
+      </div>
+    </div>`;
+  chatBody.appendChild(wrap);
+  scrollBottom();
+  setTimeout(() => {
+    const ind = document.getElementById('typingIndicator');
+    if (ind) ind.remove();
+    callback();
+    scrollBottom();
+  }, 1500);
+}
+
+function appendAIMsg(html) {
+  const chatBody = document.getElementById('chatBody');
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-msg-wrap';
+  wrap.innerHTML = `
+    <div class="chat-msg">
+      <div class="msg-avatar avatar-ai">AI</div>
+      <div class="msg-body">
+        <div class="msg-name">AI 助手</div>
+        ${html}
+      </div>
+    </div>`;
+  chatBody.appendChild(wrap);
+  return wrap;
+}
+
+function scrollBottom() {
+  const body = document.getElementById('chatBody');
+  body.scrollTop = body.scrollHeight;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ===== FLOW 1: AD ANALYSIS =====
+function appendAnalysisReport() {
+  appendAIMsg(`
+    <div class="bubble bubble-ai" style="margin-bottom:4px;">
+      已完成货号 <strong>HB1026</strong> 的广告数据抓取与分析，以下是全局诊断报告 👇
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-header">
+        <div class="analysis-sku">
+          HB1026
+          <span class="analysis-sku-badge">广告诊断</span>
+        </div>
+        <div class="analysis-period">近 30 天 · 2026-03-27 ~ 2026-04-25</div>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-label">总消耗</div>
+          <div class="metric-value">¥12,847</div>
+          <div class="metric-delta delta-up">↑ 23% vs 上月</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">整体 ACOS</div>
+          <div class="metric-value warn">34.2%</div>
+          <div class="metric-delta delta-warn">⚠ 目标 ≤ 25%</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">广告点击率</div>
+          <div class="metric-value warn">0.31%</div>
+          <div class="metric-delta delta-warn">⚠ 均值 0.45%</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-label">广告 ROI</div>
+          <div class="metric-value">2.93</div>
+          <div class="metric-delta delta-down">↓ 0.4 vs 上月</div>
+        </div>
+      </div>
+      <div class="analysis-body">
+        <div class="analysis-section">
+          <div class="section-hd">⚠️ 发现 3 个关键问题</div>
+          <div class="issue-item">
+            <span class="issue-icon">🔴</span>
+            <span><strong>ACOS 严重超标：</strong>34.2% 远超目标值 25%，主要由 <strong>62 个宽泛匹配搜索词</strong>拉高，这部分贡献了 41% 的消耗却仅带来 9% 的转化。</span>
+          </div>
+          <div class="issue-item">
+            <span class="issue-icon">🟡</span>
+            <span><strong>宽泛匹配占比过高：</strong>宽泛匹配消耗占总消耗 67%，平均 CTR 仅 0.18%，大量无效曝光消耗预算。</span>
+          </div>
+          <div class="issue-item">
+            <span class="issue-icon">🟡</span>
+            <span><strong>头部活动集中风险：</strong>前 3 个广告活动贡献了 89% 消耗，但综合转化率仅 4.2%，过度集中且效率偏低。</span>
+          </div>
+        </div>
+        <div class="analysis-section">
+          <div class="section-hd">💡 4 条优化建议</div>
+          <div class="suggest-item">
+            <span class="num">1</span>
+            <span><strong>立即否词：</strong>对 ACOS &gt; 60% 且点击量 &gt; 10 的搜索词执行精准否词，预计节省 ¥2,300 / 月，ACOS 可降至约 27%。</span>
+          </div>
+          <div class="suggest-item">
+            <span class="num">2</span>
+            <span><strong>调整出价：</strong>对 ACOS 在 25%–35% 的广告组适当降低出价 15%，优先保留转化率 &gt; 8% 的词。</span>
+          </div>
+          <div class="suggest-item">
+            <span class="num">3</span>
+            <span><strong>拓展精准词：</strong>当前精准匹配占比仅 22%，建议从高转化宽泛词中提炼，将精准匹配占比提升至 40%。</span>
+          </div>
+          <div class="suggest-item">
+            <span class="num">4</span>
+            <span><strong>暂停低效广告：</strong>有 3 个广告活动 CTR &lt; 0.1%，建议暂停或将其预算重新分配至转化较好的广告活动。</span>
+          </div>
+        </div>
+      </div>
+      <div class="analysis-cta">
+        <span class="analysis-cta-text">是否需要我给你生成分析报告？</span>
+        <button class="btn-generate" id="generateReportBtn" onclick="triggerGenerateReport(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          生成分析报告
+        </button>
+      </div>
+    </div>`);
+  pendingAction = 'report_pending';
+}
+
+function triggerGenerateReport(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> 生成中...';
+  pendingAction = null;
+  document.getElementById('chatWelcome') && (document.getElementById('chatWelcome').style.display = 'none');
+  appendUserMsg('好的，帮我生成报告');
+  showTyping(() => appendPDFGeneration());
+}
+
+function appendPDFGeneration() {
+  const pdfId = 'pdfCard_' + Date.now();
+  appendAIMsg(`
+    <div class="bubble bubble-ai" style="margin-bottom:4px;">正在为您生成 <strong>HB1026 广告诊断报告</strong>，请稍候...</div>
+    <div class="pdf-progress" id="${pdfId}">
+      <div class="pdf-progress-header">
+        <div class="pdf-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div>
+          <div class="pdf-title">HB1026_广告诊断报告_2026-04.pdf</div>
+          <div class="pdf-subtitle">正在生成中...</div>
+        </div>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="pdfBar_${pdfId}"></div></div>
+      <div class="progress-steps">
+        <div class="progress-step active" id="step1_${pdfId}"><div class="step-dot"></div>抓取广告数据</div>
+        <div class="progress-step" id="step2_${pdfId}"><div class="step-dot"></div>生成诊断内容</div>
+        <div class="progress-step" id="step3_${pdfId}"><div class="step-dot"></div>渲染 PDF 模版</div>
+        <div class="progress-step" id="step4_${pdfId}"><div class="step-dot"></div>完成</div>
+      </div>
+    </div>`);
+  scrollBottom();
+  animatePDFProgress(pdfId);
+}
+
+function animatePDFProgress(pdfId) {
+  const bar = document.getElementById('pdfBar_' + pdfId);
+  const steps = [
+    { id: 'step1_' + pdfId, pct: 25, delay: 400 },
+    { id: 'step2_' + pdfId, pct: 55, delay: 900 },
+    { id: 'step3_' + pdfId, pct: 85, delay: 1600 },
+    { id: 'step4_' + pdfId, pct: 100, delay: 2400 }
+  ];
+  steps.forEach((s, i) => {
+    setTimeout(() => {
+      if (bar) bar.style.width = s.pct + '%';
+      const el = document.getElementById(s.id);
+      if (el) {
+        if (i > 0) {
+          const prev = document.getElementById(steps[i-1].id);
+          if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
+        }
+        el.classList.add('active');
+      }
+      if (i === steps.length - 1) {
+        setTimeout(() => {
+          el && el.classList.remove('active') && el.classList.add('done');
+          const card = document.getElementById(pdfId);
+          if (card) {
+            const sub = card.querySelector('.pdf-subtitle');
+            if (sub) sub.textContent = '生成完成';
+            card.insertAdjacentHTML('afterend', `
+              <div class="download-box">
+                <div class="download-box-icon">📄</div>
+                <div class="download-box-info">
+                  <div class="download-filename">HB1026_广告诊断报告_2026-04.pdf</div>
+                  <div class="download-meta">报告大小 1.8MB · 包含 12 页数据分析</div>
+                </div>
+                <button class="btn-download" onclick="showToast('报告已下载到本地')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  下载报告
+                </button>
+              </div>`);
+          }
+          scrollBottom();
+        }, 300);
+      }
+      scrollBottom();
+    }, s.delay);
+  });
+}
+
+// ===== FLOW 2: SCHEDULED TASK =====
+function appendTaskConfirm() {
+  appendAIMsg(`
+    <div class="bubble bubble-ai" style="margin-bottom:4px;">
+      好的，我来帮您创建这个定时巡检任务。请确认以下配置：
+    </div>
+    <div class="task-confirm-card">
+      <div class="task-confirm-header">
+        <span class="task-confirm-header-icon">📋</span>
+        <span class="task-confirm-header-title">定时任务配置预览</span>
+      </div>
+      <div class="task-config-list">
+        <div class="task-config-row">
+          <span class="task-config-label">任务名称</span>
+          <span class="task-config-value">广告活动数据每日巡检</span>
+        </div>
+        <div class="task-config-row">
+          <span class="task-config-label">执行时间</span>
+          <span class="task-config-value">每天 09:00（北京时间）</span>
+        </div>
+        <div class="task-config-row">
+          <span class="task-config-label">巡检范围</span>
+          <span class="task-config-value">全部广告活动（当前账户）</span>
+        </div>
+        <div class="task-config-row">
+          <span class="task-config-label">推送渠道</span>
+          <span class="task-config-value">钉钉（已绑定群：烽火广告监控群）</span>
+        </div>
+        <div class="task-config-row">
+          <span class="task-config-label">推送内容</span>
+          <span class="task-config-value">广告消耗异常、ACOS 波动预警、预算余量不足提醒、昨日转化汇总</span>
+        </div>
+        <div class="task-config-row">
+          <span class="task-config-label">异常阈值</span>
+          <span class="task-config-value">消耗波动 ≥ 30%、ACOS ≥ 35%、预算余量 ≤ 20%</span>
+        </div>
+      </div>
+      <div class="task-confirm-footer">
+        <button class="btn-modify-task" onclick="showToast('请直接告诉我需要调整的内容')">修改配置</button>
+        <button class="btn-confirm-task" onclick="confirmCreateTask(this)">✓ 确认创建</button>
+      </div>
+    </div>`);
+  pendingAction = 'task_confirming';
+}
+
+function confirmCreateTask(btn) {
+  btn.disabled = true;
+  btn.textContent = '创建中...';
+  btn.style.opacity = '0.7';
+  pendingAction = null;
+  setTimeout(() => {
+    appendTaskCreated();
+    scrollBottom();
+  }, 1200);
+}
+
+function appendTaskCreated() {
+  const now = new Date();
+  const createdAt = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const taskId = taskIdCounter++;
+
+  // Add to tasks list
+  tasks.push({
+    id: taskId,
+    name: '广告活动数据每日巡检',
+    schedule: '每天 09:00',
+    channel: '钉钉',
+    createdAt: createdAt,
+    nextRun: '明天 09:00'
+  });
+
+  // Add sample history
+  historyRecords = [
+    { taskName: '广告活动数据每日巡检', time: '任务刚创建，将于明天 09:00 首次执行', success: true, msg: '任务配置已保存，等待首次执行' },
+  ];
+
+  renderTaskPanel();
+  renderHistoryPanel();
+  updateTaskCount();
+  openTaskPanel();
+
+  appendAIMsg(`
+    <div class="bubble bubble-ai" style="margin-bottom:4px;">✅ 定时任务已成功创建！以下是任务卡片，您可以在右侧面板管理所有任务。</div>
+    <div class="task-chat-card" data-task-id="${taskId}">
+      <div class="task-chat-card-header">
+        <div class="task-chat-card-status"></div>
+        <div class="task-chat-card-name">广告活动数据每日巡检</div>
+      </div>
+      <div class="task-chat-card-body">
+        <div class="task-chips">
+          <span class="task-chip chip-time">⏰ 每天 09:00</span>
+          <span class="task-chip chip-channel">📲 钉钉</span>
+          <span class="task-chip chip-scope">全部广告活动</span>
+        </div>
+        <div class="task-chat-actions">
+          <button class="tca-btn" onclick="showToast('编辑功能即将上线')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            编辑
+          </button>
+          <button class="tca-btn del" onclick="confirmDeleteTask(${taskId})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            删除
+          </button>
+          <button class="tca-btn tca-primary" onclick="switchTPTab('tasks', document.querySelectorAll('.tp-tab')[0]); openTaskPanel()">
+            查看任务面板 →
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="bubble bubble-ai" style="margin-top:8px;">
+      任务将于 <strong>明天 09:00</strong> 首次执行，结果会推送到 <strong>钉钉</strong>。您可以在右上角「定时任务」面板查看和管理任务，也可在「执行历史」标签页排查推送异常。
+    </div>`);
+}
+
+// ===== GENERIC REPLY =====
+function appendGenericReply(text) {
+  const responses = [
+    '您好！我可以帮您诊断商品广告表现或创建定时巡检任务。您可以尝试：<br><br><ul><li>「分析货号 <strong>HB1026</strong> 的广告情况」</li><li>「创建每天 9 点巡检广告数据的任务，结果发到钉钉」</li></ul>',
+    '收到！您能提供更多细节吗？例如具体的商品货号、或者您想设定的任务执行时间和推送渠道？',
+    '好的，我来帮您处理。请稍微提供更多信息，比如商品货号或具体需求，我会给出对应的分析和建议。'
+  ];
+  const r = responses[Math.floor(Math.random() * responses.length)];
+  appendAIMsg(`<div class="bubble bubble-ai">${r}</div>`);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能建议 · 烽火广告</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#1d2129;font-size:14px;}
+.layout{display:flex;height:100vh;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:64px;background:#1a1c2e;display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.sidebar-logo{padding:14px 0 12px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.07);width:100%;margin-bottom:4px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:18px;height:18px;fill:#fff;}
+.sidebar-nav{display:flex;flex-direction:column;align-items:center;width:100%;padding:4px 0;flex:1;}
+.nav-item{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 0;font-size:11px;color:rgba(255,255,255,.45);cursor:pointer;transition:all .18s;position:relative;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+.nav-item.active{color:#fff;background:rgba(124,58,237,.25);border-left-color:#7c3aed;}
+.nav-item.wip{opacity:.45;cursor:not-allowed;}
+.nav-item.wip:hover{color:rgba(255,255,255,.45);background:none;}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;}
+.ni-label{font-size:10px;letter-spacing:.2px;}
+.ni-badge{color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;letter-spacing:.5px;margin-bottom:1px;}
+.ni-badge-ad{background:#e8473f;}
+.ni-badge-ai{background:linear-gradient(135deg,#0ea5e9,#7c3aed);}
+.sidebar-footer{padding:12px 0 16px;border-top:1px solid rgba(255,255,255,.07);width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.user-name-small{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.2px;}
+
+/* Subnav flyout */
+.subnav-flyout{position:fixed;left:64px;top:0;background:#1f2241;min-width:168px;border-radius:0 10px 10px 0;box-shadow:6px 0 24px rgba(0,0,0,.28);z-index:300;padding:8px 0;display:none;border:1px solid rgba(255,255,255,.06);border-left:none;}
+.subnav-flyout.open{display:block;}
+.subnav-hd{padding:6px 16px 8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px;}
+.subnav-link{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13px;color:rgba(255,255,255,.6);text-decoration:none;transition:all .15s;border-left:3px solid transparent;}
+.subnav-link:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.05);}
+.subnav-link.active{color:#fff;background:rgba(124,58,237,.2);border-left-color:#7c3aed;}
+.subnav-link svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
+.subnav-link.active svg{opacity:1;}
+
+.nav-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.75);color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:all .3s;z-index:9999;white-space:nowrap;}
+.nav-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== TOPBAR ===== */
+.topbar{height:52px;background:#fff;border-bottom:1px solid #e8ecf0;display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.topbar-breadcrumb{font-size:13px;color:#8c9ab0;display:flex;align-items:center;gap:6px;}
+.topbar-breadcrumb .sep{color:#d9dfe8;}
+.topbar-breadcrumb .current{color:#1d2129;font-weight:500;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.topbar-icon{width:34px;height:34px;border-radius:7px;border:1px solid #e8ecf0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#595f6e;transition:all .2s;}
+.topbar-icon:hover{border-color:#7c3aed;color:#7c3aed;}
+.topbar-icon svg{width:16px;height:16px;}
+
+/* ===== CONTENT ===== */
+.content{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+
+/* ===== STRATEGY HEADER ===== */
+.strategy-header{background:#fff;border-bottom:1px solid #e8ecf0;padding:14px 24px 14px;flex-shrink:0;}
+.sh-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.sh-title-row{display:flex;align-items:center;gap:8px;}
+.sh-name{font-size:16px;font-weight:700;color:#1d2129;}
+.sh-badge-unmanaged{display:inline-flex;align-items:center;padding:2px 8px;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:4px;font-size:11px;font-weight:600;}
+.sh-meta{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px;}
+.sh-meta-item{display:flex;align-items:center;gap:4px;font-size:12px;color:#8c9ab0;}
+.sh-meta-item .sh-meta-label{color:#8c9ab0;}
+.sh-meta-item .sh-meta-val{color:#1d2129;font-weight:500;}
+.sh-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.sh-tag{padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;}
+.sh-tag-purple{background:#faf5ff;color:#7c3aed;border:1px solid #e9d5ff;}
+.sh-tag-blue{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.sh-tag-green{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
+.sh-tag-orange{background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;}
+.sh-tag-red{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.sh-tag-gray{background:#f5f7fa;color:#595f6e;border:1px solid #e8ecf0;}
+.sh-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;}
+.sh-stats{display:flex;gap:20px;}
+.sh-stat{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.sh-stat-label{font-size:11px;color:#8c9ab0;}
+.sh-stat-val{font-size:15px;font-weight:700;color:#1d2129;}
+.sh-btns{display:flex;gap:8px;align-items:center;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;border:1px solid transparent;transition:all .2s;font-family:inherit;white-space:nowrap;outline:none;}
+.btn-primary{background:#7c3aed;color:#fff;border-color:#7c3aed;}
+.btn-primary:hover{background:#6d28d9;}
+.btn-default{background:#fff;color:#595f6e;border-color:#d9dfe8;}
+.btn-default:hover{border-color:#7c3aed;color:#7c3aed;}
+.btn-ai{background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);color:#fff;font-weight:600;border-radius:7px;box-shadow:0 4px 12px rgba(124,58,237,.35);}
+.btn-ai:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(124,58,237,.45);}
+.btn svg{width:14px;height:14px;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.action-btn{font-size:12px;color:#7c3aed;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;transition:color .2s;}
+.action-btn:hover{color:#6d28d9;}
+.action-btn.deny{color:#dc2626;}
+.action-btn.deny:hover{color:#b91c1c;}
+
+/* Strategy type tabs */
+.st-tabs-bar{background:#fff;border-bottom:1px solid #e8ecf0;padding:0 24px;flex-shrink:0;overflow-x:auto;}
+.st-tabs-bar::-webkit-scrollbar{display:none;}
+.st-tabs{display:flex;gap:0;}
+.st-tab{padding:11px 16px;font-size:13px;color:#8c9ab0;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;user-select:none;}
+.st-tab:hover{color:#1d2129;}
+.st-tab.active{color:#7c3aed;border-bottom-color:#7c3aed;font-weight:600;}
+.st-tab .st-count{font-size:11px;background:#f0f3f8;color:#8c9ab0;padding:1px 6px;border-radius:10px;margin-left:4px;}
+.st-tab.active .st-count{background:#ede9fe;color:#7c3aed;}
+
+/* ===== FILTER + TABLE AREA ===== */
+.table-area{flex:1;overflow-y:auto;padding:16px 24px;}
+.filter-card{background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.filter-item{display:flex;align-items:center;gap:5px;}
+.filter-label{font-size:12px;color:#595f6e;white-space:nowrap;}
+.filter-select,.filter-input{height:30px;padding:0 9px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;background:#fff;outline:none;transition:border-color .2s;font-family:inherit;}
+.filter-select{cursor:pointer;}
+.filter-select:focus,.filter-input:focus{border-color:#7c3aed;box-shadow:0 0 0 2px rgba(124,58,237,.1);}
+.filter-divider{width:1px;height:16px;background:#e8ecf0;flex-shrink:0;}
+.filter-actions{display:flex;gap:6px;margin-left:auto;}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;background:#fff;border-radius:8px;padding:8px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);align-items:center;}
+.active-filter-chip{display:inline-flex;align-items:center;gap:5px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:3px 10px;border-radius:5px;font-size:12px;font-weight:500;}
+
+/* Table card */
+.table-card{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;}
+.table-toolbar{padding:10px 16px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.table-toolbar-left{display:flex;align-items:center;gap:10px;}
+.toolbar-btn{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#595f6e;cursor:pointer;background:#fff;font-family:inherit;transition:all .2s;}
+.toolbar-btn:hover{border-color:#7c3aed;color:#7c3aed;}
+.toolbar-btn svg{width:12px;height:12px;}
+.toolbar-right{display:flex;align-items:center;gap:8px;font-size:12px;color:#8c9ab0;}
+.period-text{font-weight:500;color:#1d2129;}
+.toolbar-icon-btn{width:28px;height:28px;border-radius:5px;border:1px solid #e8ecf0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8c9ab0;transition:all .2s;background:#fff;}
+.toolbar-icon-btn:hover{border-color:#7c3aed;color:#7c3aed;}
+.toolbar-icon-btn svg{width:13px;height:13px;}
+
+table{width:100%;border-collapse:collapse;}
+thead tr{background:#fafbfc;}
+thead th{padding:9px 12px;text-align:left;font-size:12px;color:#8c9ab0;font-weight:600;border-bottom:1px solid #f0f3f8;white-space:nowrap;}
+thead th.sortable{cursor:pointer;user-select:none;}
+thead th.sortable:hover{color:#7c3aed;}
+tbody tr{cursor:default;transition:background .15s;}
+tbody tr:hover{background:#f8f7ff;}
+tbody td{padding:10px 12px;font-size:13px;color:#1d2129;border-bottom:1px solid #f5f7fa;}
+tbody tr:last-child td{border-bottom:none;}
+.td-shop{display:flex;flex-direction:column;gap:2px;}
+.td-shop-name{font-size:13px;font-weight:500;color:#1d2129;}
+.td-shop-site{font-size:11px;color:#8c9ab0;}
+.td-suggestion{font-size:12px;color:#595f6e;max-width:200px;line-height:1.5;}
+.td-camp-link{color:#7c3aed;font-size:12px;cursor:pointer;}
+.td-camp-link:hover{text-decoration:underline;}
+.td-kw{font-size:13px;color:#1d2129;font-weight:500;}
+.td-asin-img{width:36px;height:36px;border-radius:4px;object-fit:cover;border:1px solid #f0f3f8;flex-shrink:0;}
+.td-asin-cell{display:flex;align-items:center;gap:8px;}
+.td-asin-img-placeholder{width:36px;height:36px;border-radius:4px;border:1px solid #f0f3f8;background:#faf5ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500;}
+.tag-blue{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.tag-gray{background:#f5f7fa;color:#8c9ab0;border:1px solid #e8ecf0;}
+.ops-cell{display:flex;gap:10px;white-space:nowrap;}
+
+/* Sort arrow */
+.sort-arrow{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;}
+.sort-arrow span{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;}
+.sort-up{border-bottom:4px solid #d9dfe8;}
+.sort-down{border-top:4px solid #7c3aed;}
+
+/* Pagination */
+.pagination{padding:10px 16px;display:flex;align-items:center;border-top:1px solid #f0f3f8;}
+.page-info{font-size:12px;color:#8c9ab0;margin-right:auto;}
+.page-btns{display:flex;gap:4px;align-items:center;}
+.page-btn{min-width:28px;height:28px;padding:0 6px;border-radius:5px;border:1px solid #d9dfe8;background:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:#595f6e;}
+.page-btn:hover:not(.active):not(:disabled){border-color:#7c3aed;color:#7c3aed;}
+.page-btn.active{background:#7c3aed;border-color:#7c3aed;color:#fff;}
+.page-btn:disabled{opacity:.4;cursor:not-allowed;}
+.page-sep{color:#d9dfe8;font-size:12px;padding:0 2px;}
+.page-size{font-size:12px;color:#8c9ab0;margin-left:12px;}
+
+/* ===== AI CHAT DRAWER ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.show{opacity:1;pointer-events:all;}
+.chat-drawer{position:fixed;right:0;top:0;bottom:0;width:680px;background:#fff;z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.23,1,.32,1);box-shadow:-4px 0 28px rgba(0,0,0,.1);}
+.chat-drawer.show{transform:translateX(0);}
+.drawer-header{padding:14px 20px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;}
+.drawer-title{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#1d2129;}
+.ai-pill{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.6px;}
+.drawer-ctx{display:flex;align-items:center;gap:6px;font-size:11px;color:#8c9ab0;background:#f5f7fa;padding:4px 10px;border-radius:5px;}
+.drawer-ctx strong{color:#7c3aed;font-weight:600;}
+.drawer-close{width:30px;height:30px;border-radius:6px;border:1px solid #e8ecf0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8c9ab0;font-size:18px;line-height:1;flex-shrink:0;}
+.drawer-close:hover{background:#f5f7fa;color:#1d2129;}
+
+/* Chat body */
+.chat-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth;}
+.chat-welcome{padding:20px 0 8px;}
+.welcome-icon{width:54px;height:54px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 8px 20px rgba(124,58,237,.28);}
+.welcome-icon svg{width:26px;height:26px;}
+.welcome-h{font-size:16px;font-weight:700;color:#1d2129;text-align:center;margin-bottom:6px;}
+.welcome-p{font-size:12px;color:#8c9ab0;line-height:1.7;text-align:center;max-width:480px;margin:0 auto;}
+.ctx-notice{display:flex;align-items:center;gap:7px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:7px;padding:8px 14px;margin:12px auto 0;font-size:12px;color:#7c3aed;max-width:480px;}
+.ctx-notice svg{width:13px;height:13px;flex-shrink:0;}
+
+/* Mode cards */
+.mode-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 4px;}
+.mode-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;text-align:left;}
+.mode-card:hover{border-color:#c4b5fd;box-shadow:0 3px 12px rgba(124,58,237,.1);}
+.mode-card-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-size:18px;}
+.mc-icon-qa{background:#faf5ff;}
+.mc-icon-edit{background:#f0fdf4;}
+.mode-card-title{font-size:13px;font-weight:600;color:#1d2129;margin-bottom:3px;}
+.mode-card-desc{font-size:11px;color:#8c9ab0;line-height:1.5;}
+
+.quick-starts{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+.qs-btn{padding:5px 12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:100px;font-size:12px;color:#7c3aed;cursor:pointer;transition:all .2s;}
+.qs-btn:hover{background:#7c3aed;color:#fff;border-color:#7c3aed;}
+
+/* Chat messages */
+.chat-msg{display:flex;gap:10px;align-items:flex-start;}
+.chat-msg.user{flex-direction:row-reverse;}
+.msg-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.avatar-ai{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;}
+.avatar-user{background:#ede9fe;color:#7c3aed;}
+.msg-body{max-width:520px;}
+.msg-name{font-size:11px;color:#8c9ab0;margin-bottom:4px;}
+.chat-msg.user .msg-name{text-align:right;}
+.bubble{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.75;word-break:break-word;}
+.bubble-ai{background:#f5f7fa;color:#1d2129;border-bottom-left-radius:4px;}
+.bubble-user{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-bottom-right-radius:4px;}
+.bubble ul{padding-left:16px;margin-top:6px;}
+.bubble li{margin-bottom:4px;}
+.bubble strong{font-weight:600;}
+.bubble code{background:rgba(0,0,0,.07);padding:1px 5px;border-radius:3px;font-size:12px;font-family:'SF Mono','Monaco',monospace;}
+.bubble p{margin-bottom:6px;}
+.bubble p:last-child{margin-bottom:0;}
+
+/* Typing */
+.typing{display:flex;align-items:center;gap:5px;padding:8px 12px;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:#c0c9d4;animation:typing .9s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:.15s;}
+.typing-dot:nth-child(3){animation-delay:.3s;}
+@keyframes typing{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+
+/* AI Cards */
+.ai-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:10px;overflow:hidden;margin-top:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.ai-card-hd{padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #f0f3f8;}
+.ai-card-hd-icon{font-size:14px;}
+.ai-card-hd-text{font-size:13px;font-weight:700;color:#1d2129;}
+.ai-card-hd-text span{color:#7c3aed;}
+.ai-card-body{padding:14px;}
+
+/* Rule section in QA card */
+.rule-section{margin-bottom:12px;}
+.rule-section:last-child{margin-bottom:0;}
+.rule-section-title{font-size:11px;font-weight:700;color:#8c9ab0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.rule-section-title::after{content:'';flex:1;height:1px;background:#f0f3f8;}
+.rule-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.rule-tag{padding:3px 9px;border-radius:5px;font-size:12px;font-weight:500;border:1px solid;}
+.rule-tag-purple{background:#faf5ff;color:#7c3aed;border-color:#e9d5ff;}
+.rule-tag-blue{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;}
+.rule-tag-green{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;}
+.rule-tag-orange{background:#fff7ed;color:#ea580c;border-color:#fed7aa;}
+
+/* Match result */
+.match-result{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;margin-top:10px;}
+.match-ok{background:#f0fdf4;border:1px solid #bbf7d0;}
+.match-fail{background:#fef2f2;border:1px solid #fecaca;}
+.match-icon{font-size:18px;flex-shrink:0;line-height:1.3;}
+.match-text{font-size:13px;line-height:1.65;color:#1d2129;}
+
+/* Suggestion detail */
+.sugg-detail{background:#fafbfc;border-radius:7px;padding:10px;margin-top:10px;}
+.sugg-detail-row{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #f0f3f8;font-size:12px;}
+.sugg-detail-row:last-child{border-bottom:none;}
+.sugg-detail-k{color:#8c9ab0;width:90px;flex-shrink:0;}
+.sugg-detail-v{color:#1d2129;font-weight:500;}
+
+/* Modify confirm card */
+.confirm-card{background:#fff;border:1.5px solid #ede9fe;border-radius:10px;overflow:hidden;margin-top:8px;box-shadow:0 2px 8px rgba(124,58,237,.08);}
+.confirm-card-hd{padding:10px 14px;background:linear-gradient(135deg,#f5f3ff,#eef2ff);border-bottom:1px solid #ede9fe;display:flex;align-items:center;gap:8px;}
+.confirm-card-hd-text{font-size:13px;font-weight:700;color:#1d2129;}
+.confirm-card-hd-text span{color:#7c3aed;}
+.confirm-card-body{padding:14px;}
+.confirm-section{margin-bottom:12px;}
+.confirm-section:last-child{margin-bottom:0;}
+.confirm-section-title{font-size:11px;font-weight:700;color:#8c9ab0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.confirm-section-title::after{content:'';flex:1;height:1px;background:#ede9fe;}
+.cond-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.cond-tag{padding:3px 10px;border-radius:5px;font-size:12px;font-weight:500;border:1px solid;}
+.cond-tag-purple{background:#faf5ff;color:#7c3aed;border-color:#e9d5ff;}
+.cond-tag-green{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;}
+.cond-tag-red{background:#fef2f2;color:#dc2626;border-color:#fecaca;}
+.cond-tag-orange{background:#fff7ed;color:#ea580c;border-color:#fed7aa;}
+.cond-tag-blue{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;}
+
+/* Related strategies */
+.related-list{display:flex;flex-direction:column;gap:6px;}
+.related-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:#fafbfc;border:1px solid #f0f3f8;border-radius:6px;font-size:12px;}
+.related-item-name{color:#7c3aed;font-weight:500;}
+.related-item-type{color:#8c9ab0;}
+.related-expand{font-size:12px;color:#7c3aed;cursor:pointer;margin-top:6px;display:inline-flex;align-items:center;gap:4px;}
+.related-expand:hover{color:#6d28d9;}
+.related-more{display:none;}
+.related-more.show{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+
+.confirm-desc{font-size:13px;color:#595f6e;line-height:1.7;background:#fafbfc;border-radius:6px;padding:10px;border:1px solid #f0f3f8;}
+.confirm-card-ft{padding:10px 14px;border-top:1px solid #ede9fe;display:flex;gap:8px;background:#fafbfc;}
+.confirm-card-ft .btn{flex:1;}
+
+/* Success box */
+.success-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-top:8px;}
+.success-icon{font-size:17px;flex-shrink:0;line-height:1.4;}
+.success-text{font-size:13px;color:#1d2129;line-height:1.7;}
+.success-link{color:#7c3aed;cursor:pointer;text-decoration:underline;font-weight:500;}
+
+/* Chat footer */
+.chat-footer{border-top:1px solid #f0f3f8;padding:12px 20px;flex-shrink:0;}
+.input-box{background:#f5f7fa;border:1.5px solid #e8ecf0;border-radius:10px;padding:10px 14px;transition:all .2s;}
+.input-box:focus-within{border-color:#7c3aed;background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.1);}
+.input-row{display:flex;gap:10px;align-items:flex-end;}
+.chat-textarea{flex:1;border:none;background:transparent;font-size:13px;color:#1d2129;resize:none;outline:none;min-height:20px;max-height:100px;font-family:inherit;line-height:1.6;}
+.chat-textarea::placeholder{color:#c0c9d4;}
+.send-btn{background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;font-family:inherit;transition:all .2s;}
+.send-btn:hover{background:#6d28d9;}
+.send-btn svg{width:13px;height:13px;}
+.input-tips{font-size:11px;color:#c0c9d4;margin-top:5px;display:flex;align-items:center;gap:6px;}
+.tip-tag{background:#e8ecf0;color:#8c9ab0;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#d9dfe8;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#bfbfbf;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="#" onclick="toggleAdSubnav(event)" id="navItemAd" title="广告">
+        <span class="ni-badge ni-badge-ad">AD</span>
+        <span class="ni-label">广告</span>
+      </a>
+      <a class="nav-item" href="ai_assistant.html" title="AI 助手">
+        <span class="ni-badge ni-badge-ai">AI</span>
+        <span class="ni-label">AI</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="商品">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="ni-label">商品</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="AMC">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>
+        <span class="ni-label">AMC</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="店铺">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="ni-label">店铺</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="品牌">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="ni-label">品牌</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="用户">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="ni-label">用户</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="工具">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        <span class="ni-label">工具</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">杨</div>
+      <div class="user-name-small">杨修瑛</div>
+    </div>
+  </aside>
+
+  <!-- SUBNAV FLYOUT -->
+  <div class="subnav-flyout" id="adSubnav">
+    <div class="subnav-hd">广告</div>
+    <a class="subnav-link" href="ad_manager.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      广告管理
+    </a>
+    <a class="subnav-link" href="strategy_center_for_customer.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      策略中心
+    </a>
+    <a class="subnav-link" href="strategy_template.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      策略模版
+    </a>
+    <a class="subnav-link active" href="smart_suggestions.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      智能建议
+    </a>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span>广告</span><span class="sep">/</span>
+        <span class="current">智能建议</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-icon" title="帮助">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="topbar-icon" title="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Strategy type tabs -->
+      <div class="st-tabs-bar">
+        <div class="st-tabs">
+          <div class="st-tab active" onclick="switchTab(this)">精准否词 <span class="st-count">5944</span></div>
+          <div class="st-tab" onclick="switchTab(this)">精准否品 <span class="st-count">697</span></div>
+          <div class="st-tab" onclick="switchTab(this)">否词根 <span class="st-count">0</span></div>
+          <div class="st-tab" onclick="switchTab(this)">暂停投放词 <span class="st-count">3974</span></div>
+          <div class="st-tab" onclick="switchTab(this)">暂停投放品 <span class="st-count">959</span></div>
+          <div class="st-tab" onclick="switchTab(this)">暂停推广品 <span class="st-count">1675</span></div>
+          <div class="st-tab" onclick="switchTab(this)">暂停广告活动 <span class="st-count">19</span></div>
+        </div>
+      </div>
+
+      <!-- Strategy Header -->
+      <div class="strategy-header">
+        <div class="sh-top">
+          <div>
+            <div class="sh-title-row">
+              <div class="sh-name">非托管_成熟期_13周以后</div>
+              <span class="sh-badge-unmanaged">未托管</span>
+            </div>
+            <div class="sh-meta" style="margin-top:8px;">
+              <div class="sh-meta-item"><span class="sh-meta-label">操作对象：</span><span class="sh-meta-val">搜索词</span></div>
+              <div class="sh-meta-item"><span class="sh-meta-label">策略类型：</span><span class="sh-meta-val">精准否词</span></div>
+              <div class="sh-meta-item"><span class="sh-meta-label">推广商品维度：</span><span class="sh-meta-val">父ASIN</span></div>
+              <div class="sh-meta-item"><span class="sh-meta-label">统计维度：</span><span class="sh-meta-val">广告活动</span></div>
+              <div class="sh-meta-item"><span class="sh-meta-label">统计周期：</span><span class="sh-meta-val">近30天</span></div>
+              <div class="sh-meta-item"><span class="sh-meta-label">模版类型：</span><span class="sh-meta-val">系统模版</span></div>
+            </div>
+          </div>
+          <div class="sh-right">
+            <div class="sh-stats">
+              <div class="sh-stat">
+                <div class="sh-stat-label">推荐建议</div>
+                <div class="sh-stat-val">2,573</div>
+              </div>
+              <div class="sh-stat">
+                <div class="sh-stat-label">应用率</div>
+                <div class="sh-stat-val">0.00%</div>
+              </div>
+            </div>
+            <div class="sh-btns">
+              <button class="btn btn-ai" onclick="openChat()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                AI 问答
+              </button>
+              <button class="btn btn-default">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+                切换策略
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="sh-tags">
+          <span class="sh-tag sh-tag-gray">非托管</span>
+          <span class="sh-tag sh-tag-purple">成熟期</span>
+          <span class="sh-tag sh-tag-blue">13周以后</span>
+          <span class="sh-tag sh-tag-gray">非过季</span>
+          <span class="sh-tag sh-tag-green">广告活动有库存</span>
+          <span class="sh-tag sh-tag-blue">搜索词</span>
+          <span class="sh-tag sh-tag-orange">有效点击</span>
+          <span class="sh-tag sh-tag-orange">低转化</span>
+          <span class="sh-tag sh-tag-red">高ACOS</span>
+        </div>
+      </div>
+
+      <!-- Table Area -->
+      <div class="table-area">
+
+        <!-- Filters -->
+        <div class="filter-card">
+          <div class="filter-item">
+            <span class="filter-label">广告账户</span>
+            <select class="filter-select" style="width:120px;"><option>全部</option><option>亚马逊欧洲站</option></select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">类目</span>
+            <select class="filter-select" style="width:100px;"><option>全部</option><option>女装</option></select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">广告负责人</span>
+            <select class="filter-select" style="width:110px;"><option>全部</option><option>系统</option></select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">父ASIN</span>
+            <select class="filter-select" style="width:80px;"><option>等于</option><option>不等于</option></select>
+            <input class="filter-input" type="text" placeholder="请输入" style="width:130px;">
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">广告活动</span>
+            <select class="filter-select" style="width:80px;"><option>等于</option></select>
+            <input class="filter-input" type="text" placeholder="请输入广告活动名称" style="width:160px;">
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">搜索词/品</span>
+            <select class="filter-select" style="width:80px;"><option>等于</option></select>
+            <input class="filter-input" type="text" placeholder="请输入搜索词/品" style="width:130px;">
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">广告活动类型</span>
+            <select class="filter-select" style="width:100px;"><option>全部</option><option>手动投放</option><option>自动投放</option></select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">托管状态</span>
+            <select class="filter-select" style="width:80px;"><option>全部</option><option>托管</option><option>未托管</option></select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">应用状态</span>
+            <select class="filter-select" style="width:80px;"><option>全部</option><option>已应用</option><option>未应用</option></select>
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-default" style="height:30px;padding:0 12px;font-size:12px;">重置</button>
+          </div>
+        </div>
+
+        <!-- Active filters -->
+        <div class="active-filters">
+          <span style="font-size:12px;color:#8c9ab0;">已选：</span>
+          <span class="active-filter-chip">负责ASIN: 全部</span>
+          <span class="active-filter-chip">应用状态: 未应用</span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <button class="toolbar-btn">
+                批量 (已选0项)
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <button class="toolbar-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                操作日志
+              </button>
+            </div>
+            <div class="toolbar-right">
+              统计周期：<span class="period-text">2026-04-07 ~ 2026-05-06</span>
+              <div class="toolbar-icon-btn" title="刷新">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              </div>
+              <div class="toolbar-icon-btn" title="列设置">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              </div>
+              <div class="toolbar-icon-btn" title="全屏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+              </div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px;"><input type="checkbox" style="accent-color:#7c3aed;"></th>
+                <th>店铺信息</th>
+                <th>智能建议</th>
+                <th>目标广告活动</th>
+                <th>搜索词</th>
+                <th>建议参考ASIN</th>
+                <th>广告活动类型</th>
+                <th class="sortable">首次曝光天数 <span class="sort-arrow"><span class="sort-up"></span><span class="sort-down"></span></span></th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="checkbox" style="accent-color:#7c3aed;"></td>
+                <td><div class="td-shop"><div class="td-shop-name">亚马逊欧洲站Sysea</div><div class="td-shop-site">站点：法国</div></div></td>
+                <td><div class="td-suggestion">新增匹配类型为精准的否定投放词<br>robe blanche femme至广告活动</div></td>
+                <td><div class="td-camp-link">J25061-法-手动关键词-罗丹</div></td>
+                <td><div class="td-kw">robe blanche femme</div></td>
+                <td><div class="td-asin-cell"><div class="td-asin-img-placeholder">👗</div></div></td>
+                <td><span class="tag tag-blue">手动投放</span></td>
+                <td style="text-align:center;">178</td>
+                <td><div class="ops-cell"><button class="action-btn">应用</button><button class="action-btn deny">不应用</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" style="accent-color:#7c3aed;"></td>
+                <td><div class="td-shop"><div class="td-shop-name">亚马逊欧洲站Sysea</div><div class="td-shop-site">站点：法国</div></div></td>
+                <td><div class="td-suggestion">新增匹配类型为精准的否定投放词<br>robe de soiree femme至广告活动</div></td>
+                <td><div class="td-camp-link">J25061-法-手动关键词-罗丹</div></td>
+                <td><div class="td-kw">robe de soiree femme</div></td>
+                <td><div class="td-asin-cell"><div class="td-asin-img-placeholder">👗</div></div></td>
+                <td><span class="tag tag-blue">手动投放</span></td>
+                <td style="text-align:center;">191</td>
+                <td><div class="ops-cell"><button class="action-btn">应用</button><button class="action-btn deny">不应用</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" style="accent-color:#7c3aed;"></td>
+                <td><div class="td-shop"><div class="td-shop-name">亚马逊欧洲站Sysea</div><div class="td-shop-site">站点：法国</div></div></td>
+                <td><div class="td-suggestion">新增匹配类型为精准的否定投放词<br>blouson femme至广告活动</div></td>
+                <td><div class="td-camp-link">J35000-法-sp自动-罗丹</div></td>
+                <td><div class="td-kw">blouson femme</div></td>
+                <td><div class="td-asin-cell"><div class="td-asin-img-placeholder">🧥</div></div></td>
+                <td><span class="tag tag-gray">自动投放</span></td>
+                <td style="text-align:center;">46</td>
+                <td><div class="ops-cell"><button class="action-btn">应用</button><button class="action-btn deny">不应用</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" style="accent-color:#7c3aed;"></td>
+                <td><div class="td-shop"><div class="td-shop-name">亚马逊欧洲站Sysea</div><div class="td-shop-site">站点：法国</div></div></td>
+                <td><div class="td-suggestion">新增匹配类型为精准的否定投放词<br>débardeur femme至广告活动</div></td>
+                <td><div class="td-camp-link">J35002-法-sp自动-罗丹</div></td>
+                <td><div class="td-kw">débardeur femme</div></td>
+                <td><div class="td-asin-cell"><div class="td-asin-img-placeholder">👕</div></div></td>
+                <td><span class="tag tag-gray">自动投放</span></td>
+                <td style="text-align:center;">57</td>
+                <td><div class="ops-cell"><button class="action-btn">应用</button><button class="action-btn deny">不应用</button></div></td>
+              </tr>
+              <tr>
+                <td><input type="checkbox" style="accent-color:#7c3aed;"></td>
+                <td><div class="td-shop"><div class="td-shop-name">亚马逊欧洲站Sysea</div><div class="td-shop-site">站点：法国</div></div></td>
+                <td><div class="td-suggestion">新增匹配类型为精准的否定投放词<br>robe longue femme至广告活动</div></td>
+                <td><div class="td-camp-link">J25063-法-手动关键词-罗丹</div></td>
+                <td><div class="td-kw">robe longue femme</div></td>
+                <td><div class="td-asin-cell"><div class="td-asin-img-placeholder">👗</div></div></td>
+                <td><span class="tag tag-blue">手动投放</span></td>
+                <td style="text-align:center;">203</td>
+                <td><div class="ops-cell"><button class="action-btn">应用</button><button class="action-btn deny">不应用</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span class="page-info">共 2,573 条</span>
+            <div class="page-btns">
+              <button class="page-btn" disabled>‹</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">4</button>
+              <button class="page-btn">5</button>
+              <span class="page-sep">…</span>
+              <button class="page-btn">52</button>
+              <button class="page-btn">›</button>
+            </div>
+            <span class="page-size">50条/页</span>
+          </div>
+        </div>
+
+      </div><!-- /table-area -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeChat()"></div>
+
+<!-- AI CHAT DRAWER -->
+<div class="chat-drawer" id="chatDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      AI 问答
+      <span class="ai-pill">BETA</span>
+    </div>
+    <div class="drawer-ctx">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+      当前策略：<strong>非托管_成熟期_13周以后</strong>
+    </div>
+    <button class="drawer-close" onclick="closeChat()">×</button>
+  </div>
+
+  <div class="chat-body" id="chatBody">
+    <div id="chatWelcome">
+      <div class="chat-welcome">
+        <div class="welcome-icon">
+          <svg viewBox="0 0 24 24" width="26" height="26"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" fill="none" stroke="#fff" stroke-width="1.8"/></svg>
+        </div>
+        <div class="welcome-h">智能建议 AI 助手</div>
+        <div class="welcome-p">我可以帮你解答当前策略建议的疑问，也可以协助你发起策略配置的修改申请。</div>
+        <div class="ctx-notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          已加载上下文：策略模版 TPL-031「非托管_成熟期_13周以后」（系统模版）
+        </div>
+      </div>
+
+      <div class="mode-cards">
+        <div class="mode-card" onclick="useQuickStart('第1页第2条建议为什么会被推出？')">
+          <div class="mode-card-icon mc-icon-qa">🔍</div>
+          <div class="mode-card-title">答疑解惑</div>
+          <div class="mode-card-desc">解释某条建议的推出原因，核查策略规则与数据是否匹配</div>
+        </div>
+        <div class="mode-card" onclick="useQuickStart('我想修改当前模版的触发条件')">
+          <div class="mode-card-icon mc-icon-edit">✏️</div>
+          <div class="mode-card-title">修改策略模版</div>
+          <div class="mode-card-desc">提出修改需求，AI 生成确认卡片后发起钉钉审批</div>
+        </div>
+      </div>
+
+      <div class="quick-starts" style="margin-top:12px;">
+        <div class="qs-btn" onclick="useQuickStart('第1页第2条建议为什么会被推出？')">第1页第2条建议为什么推出？</div>
+        <div class="qs-btn" onclick="useQuickStart('这条建议的ACOS数据和策略规则一致吗？')">数据和策略规则一致吗？</div>
+        <div class="qs-btn" onclick="useQuickStart('我想把高ACOS的阈值从1倍改为1.5倍')">修改高ACOS阈值为1.5倍</div>
+        <div class="qs-btn" onclick="useQuickStart('把近30天改为近7天')">统计周期改为近7天</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-footer">
+    <div class="input-box">
+      <div class="input-row">
+        <textarea class="chat-textarea" id="chatInput" placeholder="输入你的问题，例如：第1页第3条建议为什么会被推出？" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          发送
+        </button>
+      </div>
+    </div>
+    <div class="input-tips">
+      <span class="tip-tag">Enter</span> 发送 &nbsp;
+      <span class="tip-tag">Shift+Enter</span> 换行
+    </div>
+  </div>
+</div>
+
+<div class="nav-toast" id="navToast"></div>
+
+<script>
+// ===== NAV =====
+let subnavOpen = false;
+function toggleAdSubnav(e) {
+  e.preventDefault();
+  subnavOpen = !subnavOpen;
+  document.getElementById('adSubnav').classList.toggle('open', subnavOpen);
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#navItemAd') && !e.target.closest('#adSubnav')) {
+    subnavOpen = false;
+    document.getElementById('adSubnav').classList.remove('open');
+  }
+});
+function wipToast(e) {
+  e.preventDefault();
+  const t = document.getElementById('navToast');
+  t.textContent = '该功能正在建设中...';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== STRATEGY TABS =====
+function switchTab(el) {
+  document.querySelectorAll('.st-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ===== CHAT =====
+function openChat() {
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('chatDrawer').classList.add('show');
+  setTimeout(() => document.getElementById('chatInput').focus(), 350);
+}
+function closeChat() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('chatDrawer').classList.remove('show');
+}
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+function useQuickStart(text) {
+  document.getElementById('chatInput').value = text;
+  sendMessage();
+}
+
+// Chat state machine
+// 'idle' | 'qa_explain' | 'modify_scope' | 'modify_confirm'
+let chatMode = 'idle';
+let pendingModifyText = '';
+
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  hideWelcome();
+  appendUserMsg(text);
+  input.value = ''; input.style.height = 'auto';
+
+  const lower = text.toLowerCase();
+  const isModify = lower.includes('修改') || lower.includes('改') || lower.includes('调整') || lower.includes('统计周期') || lower.includes('阈值') || lower.includes('触发');
+  const isQA = lower.includes('为什么') || lower.includes('推出') || lower.includes('原因') || lower.includes('第') || lower.includes('数据') || lower.includes('一致');
+
+  if (chatMode === 'modify_scope') {
+    chatMode = 'modify_confirm';
+    showTyping(() => appendModifyConfirm(pendingModifyText, text));
+  } else if (isModify) {
+    pendingModifyText = text;
+    // Check if user mentioned "当前模版"
+    if (text.includes('当前模版') || text.includes('当前')) {
+      chatMode = 'modify_confirm';
+      showTyping(() => appendModifyConfirm(text, '当前模版'));
+    } else {
+      chatMode = 'modify_scope';
+      showTyping(() => appendScopeQuestion(text));
+    }
+  } else if (isQA || chatMode === 'qa_explain') {
+    chatMode = 'qa_explain';
+    showTyping(() => appendQAAnswer(text));
+  } else {
+    showTyping(() => appendGeneric(text));
+  }
+}
+
+function hideWelcome() {
+  const w = document.getElementById('chatWelcome');
+  if (w) w.style.display = 'none';
+}
+
+function appendUserMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg user';
+  el.innerHTML = `<div class="msg-avatar avatar-user">杨</div><div class="msg-body"><div class="msg-name">我</div><div class="bubble bubble-user">${esc(text)}</div></div>`;
+  document.getElementById('chatBody').appendChild(el);
+  scrollBottom();
+}
+
+function showTyping(cb) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg'; el.id = 'typingInd';
+  el.innerHTML = `<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 助手</div><div class="bubble bubble-ai"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
+  document.getElementById('chatBody').appendChild(el);
+  scrollBottom();
+  setTimeout(() => {
+    const t = document.getElementById('typingInd');
+    if (t) t.remove();
+    cb(); scrollBottom();
+  }, 1400);
+}
+
+function appendQAAnswer(text) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+
+  // Determine if it's about a specific row
+  const rowMatch = text.match(/第(\d+)页第(\d+)条/);
+  const rowDesc = rowMatch ? `第${rowMatch[1]}页第${rowMatch[2]}条建议（robe de soiree femme）` : '当前建议';
+
+  el.innerHTML = `<div class="msg-avatar avatar-ai">AI</div><div class="msg-body" style="max-width:560px;">
+    <div class="msg-name">AI 助手</div>
+    <div class="bubble bubble-ai">
+      已查询 <strong>${rowDesc}</strong> 的推出依据。<br>
+      当前策略模版为系统模版 <code>TPL-031「非托管_成熟期_13周以后」</code>，策略类型为<strong>精准否词</strong>。
+    </div>
+    <div class="ai-card">
+      <div class="ai-card-hd">
+        <span class="ai-card-hd-icon">📋</span>
+        <span class="ai-card-hd-text">策略规则 vs 建议数据核查</span>
+      </div>
+      <div class="ai-card-body">
+        <div class="rule-section">
+          <div class="rule-section-title">策略触发规则（模版配置）</div>
+          <div class="rule-tags">
+            <span class="rule-tag rule-tag-purple">成熟期</span>
+            <span class="rule-tag rule-tag-blue">13周以后</span>
+            <span class="rule-tag rule-tag-purple">有效点击 ≥ 5次</span>
+            <span class="rule-tag rule-tag-orange">近30天ACOS &gt; 类目均值</span>
+            <span class="rule-tag rule-tag-orange">低转化（CVR &lt; 1%）</span>
+          </div>
+        </div>
+        <div class="rule-section">
+          <div class="rule-section-title">建议明细数据</div>
+          <div class="sugg-detail">
+            <div class="sugg-detail-row"><span class="sugg-detail-k">广告活动</span><span class="sugg-detail-v">J25061-法-手动关键词-罗丹</span></div>
+            <div class="sugg-detail-row"><span class="sugg-detail-k">搜索词</span><span class="sugg-detail-v">robe de soiree femme</span></div>
+            <div class="sugg-detail-row"><span class="sugg-detail-k">近30天ACOS</span><span class="sugg-detail-v" style="color:#ea580c;">78.3%（类目均值 42.1%，超出 1.86倍 ✓）</span></div>
+            <div class="sugg-detail-row"><span class="sugg-detail-k">近30天CVR</span><span class="sugg-detail-v" style="color:#ea580c;">0.4%（低于1% ✓）</span></div>
+            <div class="sugg-detail-row"><span class="sugg-detail-k">近30天点击</span><span class="sugg-detail-v" style="color:#16a34a;">191次（≥5次 ✓）</span></div>
+            <div class="sugg-detail-row"><span class="sugg-detail-k">生命周期</span><span class="sugg-detail-v" style="color:#16a34a;">成熟期·第18周 ✓</span></div>
+          </div>
+        </div>
+        <div class="match-result match-ok">
+          <span class="match-icon">✅</span>
+          <div class="match-text">
+            <strong>数据与策略规则一致</strong>，该搜索词触发精准否词建议属于正常推出。<br>
+            <span style="color:#595f6e;">该词 ACOS 显著超过类目均值，持续消耗预算且无有效转化，精准否词可减少损失。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('chatBody').appendChild(el);
+  scrollBottom();
+}
+
+function appendGeneric(text) {
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 助手</div><div class="bubble bubble-ai">您好！我可以帮您：<br><ul><li>解释某条智能建议为什么被推出（例如：第1页第2条建议为什么推出？）</li><li>核查策略规则与建议数据是否一致</li><li>发起策略模版修改申请</li></ul><br>请告诉我您的具体问题。</div></div>`;
+  document.getElementById('chatBody').appendChild(el);
+  scrollBottom();
+}
+
+function appendScopeQuestion(originalText) {
+  pendingModifyText = originalText;
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 助手</div><div class="bubble bubble-ai">
+    已识别您的修改意图：<strong>${esc(originalText)}</strong><br><br>
+    请确认修改范围：<br><br>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+      <button onclick="confirmScope('当前模版')" style="padding:6px 14px;background:#faf5ff;border:1.5px solid #e9d5ff;border-radius:6px;color:#7c3aed;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;">当前模版</button>
+      <button onclick="confirmScope('全部关联模版')" style="padding:6px 14px;background:#f5f7fa;border:1.5px solid #e8ecf0;border-radius:6px;color:#595f6e;font-size:13px;cursor:pointer;font-family:inherit;">全部关联模版</button>
+    </div>
+  </div></div>`;
+  document.getElementById('chatBody').appendChild(el);
+  scrollBottom();
+}
+
+function confirmScope(scope) {
+  chatMode = 'modify_confirm';
+  hideWelcome();
+  appendUserMsg(`修改范围：${scope}`);
+  showTyping(() => appendModifyConfirm(pendingModifyText, scope));
+}
+
+function appendModifyConfirm(modifyText, scope) {
+  // Parse intent from text
+  const isAcos = modifyText.includes('ACOS') || modifyText.includes('阈值');
+  const isPeriod = modifyText.includes('近7天') || modifyText.includes('统计周期');
+  const isCondition = modifyText.includes('触发') || modifyText.includes('条件');
+
+  let changeDesc = '';
+  let tagChanges = '';
+  if (isAcos) {
+    changeDesc = '将「高ACOS」标签的触发阈值由"高于类目均值1倍"调整为"高于类目均值1.5倍"，预计将减少约30%的推出建议量。';
+    tagChanges = `<div class="cond-tags"><span class="cond-tag cond-tag-red" style="text-decoration:line-through;opacity:.5;">高ACOS &gt; 类目均值×1.0</span><span style="color:#8c9ab0;font-size:12px;">→</span><span class="cond-tag cond-tag-orange">高ACOS &gt; 类目均值×1.5</span></div>`;
+  } else if (isPeriod) {
+    changeDesc = '将统计周期由"近30天"调整为"近7天"，建议将基于最近7天的广告数据触发，响应更及时但可能波动更大。';
+    tagChanges = `<div class="cond-tags"><span class="cond-tag cond-tag-red" style="text-decoration:line-through;opacity:.5;">统计周期：近30天</span><span style="color:#8c9ab0;font-size:12px;">→</span><span class="cond-tag cond-tag-green">统计周期：近7天</span></div>`;
+  } else {
+    changeDesc = `根据您的描述：「${modifyText}」，对当前策略模版触发条件进行相应调整。`;
+    tagChanges = `<div class="cond-tags"><span class="cond-tag cond-tag-green">新增条件（待确认）</span></div>`;
+  }
+
+  const el = document.createElement('div');
+  el.className = 'chat-msg';
+  el.innerHTML = `<div class="msg-avatar avatar-ai">AI</div><div class="msg-body" style="max-width:560px;">
+    <div class="msg-name">AI 助手</div>
+    <div class="bubble bubble-ai">已生成修改预览，请确认以下变更后提交审批 👇</div>
+    <div class="confirm-card">
+      <div class="confirm-card-hd">
+        <span style="font-size:14px;">🔧</span>
+        <span class="confirm-card-hd-text">修改预览 · <span>策略模版变更申请</span></span>
+      </div>
+      <div class="confirm-card-body">
+        <div class="confirm-section">
+          <div class="confirm-section-title">标签变更</div>
+          ${tagChanges}
+        </div>
+        <div class="confirm-section">
+          <div class="confirm-section-title">策略类型</div>
+          <div class="cond-tags"><span class="cond-tag cond-tag-purple">精准否词</span></div>
+        </div>
+        <div class="confirm-section">
+          <div class="confirm-section-title">修改范围</div>
+          <div class="cond-tags"><span class="cond-tag cond-tag-blue">${scope}</span></div>
+        </div>
+        <div class="confirm-section">
+          <div class="confirm-section-title">关联策略</div>
+          <div class="related-list">
+            <div class="related-item"><span class="related-item-name">TPL-031 非托管_成熟期_13周以后</span><span class="related-item-type">系统模版</span></div>
+            <div class="related-item"><span class="related-item-name">TPL-032 非托管_成熟期_8周以后</span><span class="related-item-type">系统模版</span></div>
+            <div class="related-item"><span class="related-item-name">TPL-033 托管_成熟期_精准否词</span><span class="related-item-type">系统模版</span></div>
+          </div>
+          <div class="related-expand" onclick="toggleRelated(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
+            展开查看全部 6 条关联策略
+          </div>
+          <div class="related-more">
+            <div class="related-item"><span class="related-item-name">TPL-034 非托管_新品期_否词</span><span class="related-item-type">系统模版</span></div>
+            <div class="related-item"><span class="related-item-name">TPL-035 非托管_成熟期_搜索品</span><span class="related-item-type">系统模版</span></div>
+            <div class="related-item"><span class="related-item-name">TPL-041 自定义_精准否词_A</span><span class="related-item-type">自定义模版</span></div>
+          </div>
+        </div>
+        <div class="confirm-section">
+          <div class="confirm-section-title">修改说明</div>
+          <div class="confirm-desc">${changeDesc}</div>
+        </div>
+      </div>
+      <div class="confirm-card-ft">
+        <button class="btn btn-default" onclick="chatMode='idle';">重新描述</button>
+        <button class="btn btn-primary" onclick="submitApproval(this)">✓ 确认并提交审批</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('chatBody').appendChild(el);
+  scrollBottom();
+}
+
+function toggleRelated(el) {
+  const more = el.nextElementSibling;
+  const isOpen = more.classList.contains('show');
+  more.classList.toggle('show', !isOpen);
+  el.innerHTML = isOpen
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg> 展开查看全部 6 条关联策略`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="18 15 12 9 6 15"/></svg> 收起`;
+}
+
+function submitApproval(btn) {
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  btn.style.opacity = '.6';
+  setTimeout(() => {
+    const el = document.createElement('div');
+    el.className = 'chat-msg';
+    el.innerHTML = `<div class="msg-avatar avatar-ai">AI</div><div class="msg-body" style="max-width:520px;"><div class="msg-name">AI 助手</div><div class="bubble bubble-ai">审批已提交 🎉</div><div class="success-box"><span class="success-icon">✅</span><div class="success-text"><strong>钉钉审批已发起成功</strong>，审批单已发送给交付经理。<br>预计在 1 个工作日内处理完成，审批结果将通过钉钉通知您。<br><span style="color:#8c9ab0;font-size:12px;">审批单号：APP-2026050701-0042</span></div></div></div>`;
+    document.getElementById('chatBody').appendChild(el);
+    chatMode = 'idle';
+    scrollBottom();
+  }, 1200);
+}
+
+function scrollBottom() {
+  const b = document.getElementById('chatBody');
+  b.scrollTop = b.scrollHeight;
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>策略模版 · 烽火广告</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#1d2129;font-size:14px;}
+
+/* ===== LAYOUT ===== */
+.layout{display:flex;height:100vh;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:52px;background:#fff;border-bottom:1px solid #e8ecf0;display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:64px;background:#1a1c2e;display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.sidebar-logo{padding:14px 0 12px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.07);width:100%;margin-bottom:4px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:18px;height:18px;fill:#fff;}
+.sidebar-nav{display:flex;flex-direction:column;align-items:center;width:100%;padding:4px 0;flex:1;}
+.nav-item{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 0;font-size:11px;color:rgba(255,255,255,.45);cursor:pointer;transition:all .18s;position:relative;text-decoration:none;border-left:3px solid transparent;}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+.nav-item.active{color:#fff;background:rgba(124,58,237,.25);border-left-color:#7c3aed;}
+.nav-item.wip{opacity:.45;cursor:not-allowed;}
+.nav-item.wip:hover{color:rgba(255,255,255,.45);background:none;}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;}
+.nav-item .ni-label{font-size:10px;letter-spacing:.2px;}
+.ni-badge{color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;letter-spacing:.5px;margin-bottom:1px;}
+.ni-badge-ad{background:#e8473f;}
+.ni-badge-ai{background:linear-gradient(135deg,#0ea5e9,#7c3aed);}
+.sidebar-footer{padding:12px 0 16px;border-top:1px solid rgba(255,255,255,.07);width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#36cfc9);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.user-name-small{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.2px;}
+
+/* Subnav flyout */
+.subnav-flyout{position:fixed;left:64px;top:0;background:#1f2241;min-width:168px;border-radius:0 10px 10px 0;box-shadow:6px 0 24px rgba(0,0,0,.28);z-index:300;padding:8px 0;display:none;border:1px solid rgba(255,255,255,.06);border-left:none;}
+.subnav-flyout.open{display:block;}
+.subnav-hd{padding:6px 16px 8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:4px;}
+.subnav-link{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13px;color:rgba(255,255,255,.6);text-decoration:none;transition:all .15s;border-left:3px solid transparent;}
+.subnav-link:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.05);}
+.subnav-link.active{color:#fff;background:rgba(124,58,237,.2);border-left-color:#7c3aed;}
+.subnav-link svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
+
+/* Toast */
+.nav-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.75);color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:all .3s;z-index:9999;white-space:nowrap;}
+.nav-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== TOPBAR ===== */
+.topbar-breadcrumb{font-size:13px;color:#8c9ab0;display:flex;align-items:center;gap:6px;}
+.topbar-breadcrumb .current{color:#1d2129;font-weight:500;}
+.topbar-breadcrumb .sep{color:#d9dfe8;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.topbar-icon{width:34px;height:34px;border-radius:7px;border:1px solid #e8ecf0;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#595f6e;transition:all .2s;}
+.topbar-icon:hover{border-color:#7c3aed;color:#7c3aed;}
+.topbar-icon svg{width:16px;height:16px;}
+
+/* ===== PAGE HEADER ===== */
+.page-header{margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;}
+.page-title{font-size:18px;font-weight:700;color:#1d2129;}
+.page-desc{font-size:12px;color:#8c9ab0;margin-top:3px;}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 14px;border-radius:6px;font-size:13px;cursor:pointer;border:1px solid transparent;transition:all .2s;font-family:inherit;white-space:nowrap;outline:none;}
+.btn-primary{background:#7c3aed;color:#fff;border-color:#7c3aed;}
+.btn-primary:hover{background:#6d28d9;}
+.btn-default{background:#fff;color:#595f6e;border-color:#d9dfe8;}
+.btn-default:hover{border-color:#7c3aed;color:#7c3aed;}
+.btn-warning{background:#fff;color:#d97706;border-color:#fbbf24;}
+.btn-warning:hover{background:#fffbeb;}
+.btn-danger{background:#fff;color:#dc2626;border-color:#fca5a5;}
+.btn-danger:hover{background:#fef2f2;}
+.btn-ai{background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);color:#fff;padding:7px 16px;font-size:13px;font-weight:600;border-radius:7px;box-shadow:0 4px 12px rgba(124,58,237,.35);}
+.btn-ai:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(124,58,237,.45);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn svg{width:14px;height:14px;}
+.action-btn{font-size:12px;color:#7c3aed;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;transition:color .2s;}
+.action-btn:hover{color:#6d28d9;}
+.action-btn.del{color:#dc2626;}
+.action-btn.del:hover{color:#b91c1c;}
+
+/* ===== FILTER BAR ===== */
+.filter-card{background:#fff;border-radius:8px;padding:14px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.filter-item{display:flex;align-items:center;gap:6px;}
+.filter-label{font-size:12px;color:#595f6e;white-space:nowrap;}
+.filter-select,.filter-input{height:32px;padding:0 10px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;background:#fff;outline:none;transition:border-color .2s;font-family:inherit;}
+.filter-select{cursor:pointer;}
+.filter-select:focus,.filter-input:focus{border-color:#7c3aed;box-shadow:0 0 0 2px rgba(124,58,237,.1);}
+.filter-divider{width:1px;height:18px;background:#e8ecf0;flex-shrink:0;}
+.filter-actions{display:flex;gap:8px;margin-left:auto;}
+.date-range{display:flex;align-items:center;gap:6px;}
+.date-range input{height:32px;padding:0 10px;border:1px solid #d9dfe8;border-radius:6px;font-size:12px;color:#1d2129;background:#fff;outline:none;width:130px;font-family:inherit;}
+.date-range input:focus{border-color:#7c3aed;}
+.date-range .sep{font-size:12px;color:#bfbfbf;}
+
+/* ===== TABLE ===== */
+.table-card{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;}
+.table-toolbar{padding:12px 16px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;justify-content:space-between;}
+.table-toolbar-left{display:flex;align-items:center;gap:10px;}
+.table-toolbar-title{font-size:14px;font-weight:600;color:#1d2129;}
+.total-badge{background:#f0f3f8;color:#8c9ab0;padding:2px 8px;border-radius:100px;font-size:12px;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:#fafbfc;}
+thead th{padding:10px 14px;text-align:left;font-size:12px;color:#8c9ab0;font-weight:600;border-bottom:1px solid #f0f3f8;white-space:nowrap;}
+tbody tr{cursor:default;transition:background .15s;}
+tbody tr:hover{background:#f8f7ff;}
+tbody td{padding:11px 14px;font-size:13px;color:#1d2129;border-bottom:1px solid #f5f7fa;}
+tbody tr:last-child td{border-bottom:none;}
+.name-link{color:#7c3aed;cursor:pointer;font-weight:500;}
+.name-link:hover{text-decoration:underline;}
+.td-intro{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#595f6e;font-size:12px;}
+.ops{display:flex;gap:10px;}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:12px;font-weight:500;}
+.tag-blue{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+.tag-green{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
+.tag-orange{background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;}
+.tag-purple{background:#faf5ff;color:#7c3aed;border:1px solid #e9d5ff;}
+.tag-red{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.tag-gray{background:#f5f7fa;color:#8c9ab0;border:1px solid #e8ecf0;}
+.tag-indigo{background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;}
+.tag-cyan{background:#ecfeff;color:#0891b2;border:1px solid #a5f3fc;}
+.tag-sm{font-size:11px;padding:2px 7px;}
+.status{display:inline-flex;align-items:center;gap:5px;font-size:12px;}
+.status-dot{width:6px;height:6px;border-radius:50%;}
+.dot-active{background:#16a34a;}
+.dot-inactive{background:#bfbfbf;}
+
+/* View toggle */
+.view-toggle{display:flex;gap:4px;}
+.view-btn{width:30px;height:30px;border-radius:6px;border:1px solid #d9dfe8;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8c9ab0;transition:all .2s;}
+.view-btn:hover:not(.active){border-color:#7c3aed;color:#7c3aed;}
+.view-btn.active{background:#7c3aed;border-color:#7c3aed;color:#fff;}
+.view-btn svg{width:14px;height:14px;}
+
+/* Pagination */
+.pagination{padding:12px 16px;display:flex;align-items:center;border-top:1px solid #f0f3f8;}
+.page-info{font-size:12px;color:#8c9ab0;margin-right:auto;}
+.page-btns{display:flex;gap:5px;}
+.page-btn{width:30px;height:30px;border-radius:6px;border:1px solid #d9dfe8;background:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:#595f6e;}
+.page-btn:hover:not(.active):not(:disabled){border-color:#7c3aed;color:#7c3aed;}
+.page-btn.active{background:#7c3aed;border-color:#7c3aed;color:#fff;}
+.page-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ===== CARD VIEW ===== */
+.card-view-wrap{display:none;}
+.card-view-wrap.show{display:flex;gap:0;background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;min-height:560px;}
+
+/* LEFT TREE */
+.tree-panel{width:236px;border-right:1px solid #f0f3f8;flex-shrink:0;overflow-y:auto;background:#fafbfc;}
+.tree-panel-hd{padding:12px 14px 10px;font-size:12px;font-weight:600;color:#8c9ab0;border-bottom:1px solid #f0f3f8;letter-spacing:.4px;text-transform:uppercase;}
+.tree-l1{border-bottom:1px solid #f0f3f8;}
+.tree-l1-hd{display:flex;align-items:center;gap:6px;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s;}
+.tree-l1-hd:hover{background:#f5f3ff;}
+.tree-l1-toggle{width:14px;height:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#c0c9d4;transition:transform .2s;}
+.tree-l1-toggle.open{transform:rotate(90deg);}
+.tree-l1-toggle svg{width:10px;height:10px;}
+.tree-l1-name{flex:1;font-size:13px;font-weight:600;color:#1d2129;}
+.tree-l1-count{font-size:11px;color:#bfbfbf;background:#f0f3f8;padding:1px 6px;border-radius:10px;min-width:20px;text-align:center;}
+.tree-l1-body{padding:4px 0;}
+
+.tree-l2{padding-left:0;}
+.tree-l2-hd{display:flex;align-items:center;gap:6px;padding:7px 14px 7px 28px;cursor:pointer;user-select:none;transition:background .15s;}
+.tree-l2-hd:hover{background:#f5f3ff;}
+.tree-l2-toggle{width:12px;height:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#c0c9d4;transition:transform .2s;}
+.tree-l2-toggle.open{transform:rotate(90deg);}
+.tree-l2-toggle svg{width:8px;height:8px;}
+.tree-l2-name{flex:1;font-size:12px;color:#595f6e;font-weight:500;}
+.tree-l2-count{font-size:11px;color:#bfbfbf;background:#f0f3f8;padding:1px 5px;border-radius:10px;}
+.tree-l2-body{padding:2px 0;}
+
+.tree-l3-item{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 6px 44px;cursor:pointer;font-size:12px;color:#595f6e;transition:all .15s;border-left:2px solid transparent;}
+.tree-l3-item:hover{background:#f5f3ff;color:#7c3aed;}
+.tree-l3-item.selected{background:#faf5ff;color:#7c3aed;border-left-color:#7c3aed;font-weight:500;}
+.tree-l3-count{font-size:11px;color:#bfbfbf;background:#f0f3f8;padding:1px 5px;border-radius:10px;}
+.tree-l3-item.selected .tree-l3-count{background:#ede9fe;color:#7c3aed;}
+
+/* RIGHT CARDS */
+.cards-panel{flex:1;padding:16px;overflow-y:auto;}
+.cards-breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:#8c9ab0;margin-bottom:14px;flex-wrap:wrap;}
+.cards-breadcrumb .bc-sep{color:#d9dfe8;}
+.cards-breadcrumb .bc-cur{color:#1d2129;font-weight:500;}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;}
+.strategy-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:8px;padding:14px;transition:all .2s;}
+.strategy-card:hover{border-color:#c4b5fd;box-shadow:0 4px 14px rgba(124,58,237,.1);}
+.sc-name{font-size:13px;font-weight:600;color:#1d2129;margin-bottom:8px;line-height:1.5;cursor:pointer;}
+.sc-name:hover{color:#7c3aed;}
+.sc-status{margin-bottom:8px;}
+.sc-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;min-height:22px;}
+.sc-chip{background:#f0f3f8;color:#595f6e;padding:2px 7px;border-radius:4px;font-size:11px;}
+.sc-ops{display:flex;align-items:center;gap:10px;border-top:1px solid #f5f7fa;padding-top:10px;}
+.sc-apply-btn{background:#7c3aed;color:#fff;border:none;border-radius:5px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;font-weight:500;margin-left:auto;}
+.sc-apply-btn:hover{background:#6d28d9;}
+.sc-badge-applied{display:inline-flex;align-items:center;gap:4px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:600;}
+.sc-badge-applied::before{content:'';width:5px;height:5px;border-radius:50%;background:#16a34a;}
+.sc-badge-unapplied{display:inline-flex;align-items:center;gap:4px;background:#f5f7fa;color:#8c9ab0;border:1px solid #e8ecf0;padding:2px 9px;border-radius:100px;font-size:11px;}
+.sc-badge-unapplied::before{content:'';width:5px;height:5px;border-radius:50%;background:#d9dfe8;}
+
+/* ===== DETAIL PAGE ===== */
+.detail-wrap{display:none;}
+.detail-wrap.show{display:block;}
+.list-wrap.hide{display:none;}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#8c9ab0;cursor:pointer;margin-bottom:14px;transition:color .2s;}
+.back-link:hover{color:#7c3aed;}
+.back-link svg{width:13px;height:13px;}
+.detail-hero{background:#fff;border-radius:8px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.detail-hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px;}
+.detail-name{font-size:20px;font-weight:700;color:#1d2129;line-height:1.4;}
+.detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.detail-meta{display:flex;gap:28px;flex-wrap:wrap;}
+.meta-item{display:flex;flex-direction:column;gap:3px;}
+.meta-label{font-size:11px;color:#8c9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.meta-value{font-size:13px;color:#1d2129;font-weight:500;}
+
+/* Tabs */
+.tabs-wrap{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;}
+.tabs-nav{display:flex;border-bottom:1px solid #f0f3f8;padding:0 22px;}
+.tab-item{padding:12px 18px;font-size:13px;color:#8c9ab0;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;font-weight:500;white-space:nowrap;}
+.tab-item.active{color:#7c3aed;border-bottom-color:#7c3aed;background:#fff;}
+.tab-item:hover:not(.active){color:#595f6e;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.tab-body{padding:22px;}
+
+/* Config sections */
+.section-hd{font-size:13px;font-weight:700;color:#1d2129;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.section-hd::before{content:'';width:3px;height:13px;background:#7c3aed;border-radius:2px;flex-shrink:0;}
+.section-block{margin-bottom:22px;}
+.desc-card{background:#f8f7ff;border:1px solid #ede9fe;border-radius:8px;padding:14px 16px;font-size:13px;color:#595f6e;line-height:1.9;}
+.desc-purple{color:#7c3aed;font-weight:600;}
+.desc-blue{color:#2563eb;font-weight:600;}
+.desc-bold{font-weight:700;}
+.desc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+
+.radio-group{display:flex;gap:20px;align-items:center;}
+.radio-item{display:flex;align-items:center;gap:5px;cursor:pointer;}
+.radio-item input[type=radio]{accent-color:#7c3aed;width:14px;height:14px;}
+.radio-item span{font-size:13px;color:#1d2129;}
+.sub-config{margin-top:12px;padding:14px 16px;background:#fafbfc;border-radius:8px;border:1px solid #f0f3f8;display:flex;flex-direction:column;gap:12px;}
+.sub-row{display:flex;align-items:center;gap:24px;}
+.sub-lbl{font-size:12px;color:#8c9ab0;width:64px;flex-shrink:0;}
+
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:16px;background:#fafbfc;border-radius:8px;border:1px solid #f0f3f8;}
+.info-cell-lbl{font-size:11px;color:#8c9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+
+/* Condition builder */
+.cond-builder{display:flex;border:1px solid #f0f3f8;border-radius:8px;overflow:hidden;min-height:360px;}
+.rule-panel{width:252px;border-right:1px solid #f0f3f8;background:#fafbfc;flex-shrink:0;overflow-y:auto;}
+.rule-panel-hd{padding:10px 14px;font-size:11px;font-weight:700;color:#8c9ab0;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid #f0f3f8;background:#fff;}
+.rule-group-hd{display:flex;align-items:center;gap:6px;padding:9px 14px;cursor:pointer;font-size:13px;font-weight:600;color:#1d2129;user-select:none;background:#fff;border-bottom:1px solid #f5f7fa;}
+.rule-group-hd:hover{background:#f5f5f5;}
+.rg-arrow{color:#bfbfbf;font-size:10px;transition:transform .2s;}
+.rg-arrow.open{transform:rotate(90deg);}
+.rule-group-body{border-bottom:1px solid #f0f3f8;}
+.rule-sub-hd{display:flex;align-items:center;gap:5px;padding:7px 14px 7px 26px;cursor:pointer;font-size:12px;color:#595f6e;font-weight:500;user-select:none;background:#fafbfc;}
+.rule-sub-hd:hover{background:#f0f0f0;}
+.rsub-arrow{color:#c0c9d4;font-size:9px;transition:transform .2s;}
+.rsub-arrow.open{transform:rotate(90deg);}
+.rule-item{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 6px 38px;font-size:12px;color:#595f6e;cursor:pointer;transition:background .15s;}
+.rule-item:hover{background:#ede9fe;color:#7c3aed;}
+.ri-plus{color:#7c3aed;font-size:15px;opacity:0;transition:opacity .15s;}
+.rule-item:hover .ri-plus{opacity:1;}
+.cond-right{flex:1;padding:16px;overflow-y:auto;background:#fff;}
+.add-group-btn{margin-bottom:14px;}
+.cond-group{border:1px solid #ede9fe;border-radius:8px;margin-bottom:10px;overflow:hidden;}
+.cond-group-hd{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#f8f7ff;border-bottom:1px solid #ede9fe;}
+.cond-group-title{font-size:13px;font-weight:600;color:#7c3aed;}
+.cond-group-sub{font-size:11px;color:#8c9ab0;margin-left:6px;font-weight:400;}
+.cond-group-del{font-size:12px;color:#dc2626;cursor:pointer;border:none;background:none;font-family:inherit;}
+.cond-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:#f8f7ff;border-radius:6px;border:1px solid #ede9fe;margin:8px 14px;}
+.cond-field-tag{background:#ede9fe;color:#7c3aed;padding:3px 9px;border-radius:5px;font-size:12px;font-weight:500;}
+.cond-op{font-size:12px;color:#8c9ab0;}
+.cond-sel{height:28px;padding:0 8px;border:1px solid #d9dfe8;border-radius:5px;font-size:12px;color:#1d2129;outline:none;background:#fff;font-family:inherit;}
+.cond-sel:focus{border-color:#7c3aed;}
+.cond-del-btn{color:#bfbfbf;cursor:pointer;font-size:16px;margin-left:auto;border:none;background:none;flex-shrink:0;}
+.cond-del-btn:hover{color:#dc2626;}
+.or-divider{display:flex;align-items:center;gap:10px;margin:2px 14px 2px;}
+.or-line{flex:1;height:1px;background:#ede9fe;}
+.or-badge{font-size:11px;color:#7c3aed;background:#ede9fe;padding:2px 10px;border-radius:10px;}
+
+/* Apply tab table */
+.apply-table{width:100%;border-collapse:collapse;}
+.apply-table th{padding:10px 12px;font-size:12px;color:#8c9ab0;font-weight:600;background:#fafbfc;border-bottom:1px solid #f0f3f8;text-align:left;white-space:nowrap;}
+.apply-table td{padding:10px 12px;font-size:13px;color:#1d2129;border-bottom:1px solid #f5f7fa;}
+.apply-table tr:last-child td{border-bottom:none;}
+.apply-table tr:hover td{background:#f8f7ff;}
+.log-before{color:#dc2626;font-size:12px;text-decoration:line-through;}
+.log-after{color:#16a34a;font-size:12px;}
+
+/* ===== MODAL ===== */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.show{opacity:1;pointer-events:all;}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:10px;width:500px;max-height:88vh;overflow-y:auto;z-index:400;box-shadow:0 12px 40px rgba(0,0,0,.18);display:none;}
+.modal.show{display:block;}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #f0f3f8;}
+.modal-title{font-size:15px;font-weight:700;color:#1d2129;}
+.modal-close{width:28px;height:28px;border-radius:6px;border:1px solid #e8ecf0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8c9ab0;font-size:18px;line-height:1;}
+.modal-close:hover{background:#f5f7fa;}
+.modal-body{padding:20px;}
+.modal-sec{margin-bottom:18px;}
+.modal-sec-title{font-size:11px;font-weight:700;color:#8c9ab0;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px dashed #f0f3f8;}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.form-row:last-child{margin-bottom:0;}
+.form-label{font-size:12px;color:#595f6e;}
+.form-control{padding:7px 10px;border:1px solid #d9dfe8;border-radius:6px;font-size:13px;color:#1d2129;outline:none;width:100%;font-family:inherit;}
+.form-control:focus{border-color:#7c3aed;box-shadow:0 0 0 2px rgba(124,58,237,.1);}
+.form-hint{font-size:11px;color:#bfbfbf;margin-top:3px;}
+.toggle-section{display:none;margin-top:12px;padding:12px 14px;background:#f8f7ff;border-radius:6px;border:1px solid #ede9fe;display:flex;flex-direction:column;gap:10px;}
+.toggle-section.hide{display:none;}
+.modal-ft{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid #f0f3f8;}
+
+/* Confirm modal */
+.confirm-modal{width:380px;}
+.confirm-body{padding:20px 24px;}
+.confirm-icon{font-size:24px;margin-bottom:8px;}
+.confirm-title-text{font-size:15px;font-weight:600;color:#1d2129;margin-bottom:5px;}
+.confirm-sub{font-size:13px;color:#8c9ab0;line-height:1.6;}
+
+/* ===== AI CHAT DRAWER ===== */
+.chat-drawer{position:fixed;right:0;top:0;bottom:0;width:660px;background:#fff;z-index:201;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.23,1,.32,1);box-shadow:-4px 0 28px rgba(0,0,0,.1);}
+.chat-drawer.show{transform:translateX(0);}
+.drawer-header{padding:16px 22px;border-bottom:1px solid #f0f3f8;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.drawer-title{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#1d2129;}
+.ai-pill{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:2px 9px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.6px;}
+.drawer-notice{font-size:11px;color:#f59e0b;background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:3px 10px;font-weight:500;}
+.drawer-close{width:30px;height:30px;border-radius:6px;border:1px solid #e8ecf0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8c9ab0;font-size:18px;line-height:1;transition:all .2s;}
+.drawer-close:hover{background:#f5f7fa;color:#1d2129;}
+.chat-body{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth;}
+.chat-welcome{text-align:center;padding:24px 20px 12px;}
+.welcome-icon{width:58px;height:58px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 8px 20px rgba(124,58,237,.28);}
+.welcome-icon svg{width:28px;height:28px;}
+.welcome-h{font-size:17px;font-weight:700;color:#1d2129;margin-bottom:6px;}
+.welcome-p{font-size:12px;color:#8c9ab0;line-height:1.7;max-width:440px;margin:0 auto;}
+.welcome-limit{display:inline-flex;align-items:center;gap:6px;background:#faf5ff;border:1px solid #e9d5ff;border-radius:6px;padding:6px 14px;margin:12px auto 0;font-size:12px;color:#7c3aed;}
+.quick-starts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+.qs-btn{padding:6px 14px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:100px;font-size:12px;color:#7c3aed;cursor:pointer;transition:all .2s;}
+.qs-btn:hover{background:#7c3aed;color:#fff;border-color:#7c3aed;}
+.chat-msg{display:flex;gap:10px;align-items:flex-start;}
+.chat-msg.user{flex-direction:row-reverse;}
+.msg-avatar{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.avatar-ai{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;}
+.avatar-user{background:#ede9fe;color:#7c3aed;}
+.msg-body{max-width:500px;}
+.msg-name{font-size:11px;color:#8c9ab0;margin-bottom:4px;}
+.chat-msg.user .msg-name{text-align:right;}
+.bubble{padding:11px 15px;border-radius:12px;font-size:13px;line-height:1.75;word-break:break-word;}
+.bubble-ai{background:#f5f7fa;color:#1d2129;border-bottom-left-radius:4px;}
+.bubble-user{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border-bottom-right-radius:4px;}
+.bubble ul{padding-left:16px;margin-top:6px;}
+.bubble li{margin-bottom:4px;}
+.bubble strong{font-weight:600;}
+.bubble code{background:rgba(0,0,0,.07);padding:2px 6px;border-radius:4px;font-size:12px;font-family:'SF Mono','Monaco',monospace;}
+.typing{display:flex;align-items:center;gap:5px;padding:10px 14px;}
+.typing-dot{width:6px;height:6px;border-radius:50%;background:#c0c9d4;animation:typing .9s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:.15s;}
+.typing-dot:nth-child(3){animation-delay:.3s;}
+@keyframes typing{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+.preview-card{background:#fff;border:1.5px solid #e8ecf0;border-radius:10px;overflow:hidden;margin-top:10px;box-shadow:0 3px 10px rgba(0,0,0,.06);}
+.preview-header{padding:11px 15px;background:linear-gradient(135deg,#f5f3ff,#eef2ff);border-bottom:1px solid #e8ecf0;display:flex;align-items:center;gap:8px;}
+.preview-header-text{font-size:13px;font-weight:700;color:#1d2129;}
+.preview-header-text span{color:#7c3aed;}
+.preview-body{padding:14px;}
+.preview-section{margin-bottom:12px;}
+.preview-section:last-child{margin-bottom:0;}
+.preview-section-title{font-size:11px;font-weight:700;color:#8c9ab0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.preview-section-title::after{content:'';flex:1;height:1px;background:#f0f3f8;}
+.cond-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.cond-tag{padding:4px 11px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid;}
+.cond-tag-purple{background:#faf5ff;color:#7c3aed;border-color:#e9d5ff;}
+.cond-tag-green{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;}
+.cond-tag-action{background:#fff7ed;color:#ea580c;border-color:#fed7aa;}
+.preview-params{background:#f8f7ff;border-radius:7px;padding:11px;display:flex;gap:20px;flex-wrap:wrap;margin-top:4px;}
+.param-item{display:flex;flex-direction:column;gap:2px;}
+.param-label{font-size:11px;color:#8c9ab0;}
+.param-value{font-size:13px;font-weight:700;color:#1d2129;}
+.preview-footer{padding:11px 15px;border-top:1px solid #f0f3f8;display:flex;gap:10px;background:#fafbfc;}
+.preview-footer .btn{flex:1;}
+.success-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 15px;display:flex;gap:10px;align-items:flex-start;margin-top:10px;}
+.success-icon{font-size:17px;flex-shrink:0;line-height:1.4;}
+.success-text{font-size:13px;color:#1d2129;line-height:1.7;}
+.success-link{color:#7c3aed;cursor:pointer;text-decoration:underline;font-weight:500;}
+.chat-footer{border-top:1px solid #f0f3f8;padding:14px 22px;flex-shrink:0;}
+.input-box{background:#f5f7fa;border:1.5px solid #e8ecf0;border-radius:10px;padding:11px 15px;transition:all .2s;}
+.input-box:focus-within{border-color:#7c3aed;background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.1);}
+.input-row{display:flex;gap:10px;align-items:flex-end;}
+.chat-textarea{flex:1;border:none;background:transparent;font-size:13px;color:#1d2129;resize:none;outline:none;min-height:20px;max-height:110px;font-family:inherit;line-height:1.6;}
+.chat-textarea::placeholder{color:#c0c9d4;}
+.send-btn{background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:7px 16px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;font-family:inherit;transition:all .2s;}
+.send-btn:hover{background:#6d28d9;}
+.send-btn svg{width:13px;height:13px;}
+.input-tips{font-size:11px;color:#c0c9d4;margin-top:6px;display:flex;align-items:center;gap:6px;}
+.tip-tag{background:#e8ecf0;color:#8c9ab0;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#d9dfe8;border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:#bfbfbf;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="#" onclick="toggleAdSubnav(event)" id="navItemAd" title="广告">
+        <span class="ni-badge ni-badge-ad">AD</span>
+        <span class="ni-label">广告</span>
+      </a>
+      <a class="nav-item" href="ai_assistant.html" title="AI 助手">
+        <span class="ni-badge ni-badge-ai">AI</span>
+        <span class="ni-label">AI</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="商品">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="ni-label">商品</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="AMC">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>
+        <span class="ni-label">AMC</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="店铺">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="ni-label">店铺</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="品牌">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="ni-label">品牌</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="用户">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="ni-label">用户</span>
+      </a>
+      <a class="nav-item wip" href="#" onclick="wipToast(event)" title="工具">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        <span class="ni-label">工具</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">杨</div>
+      <div class="user-name-small">杨修瑛</div>
+    </div>
+  </aside>
+
+  <!-- SUBNAV FLYOUT -->
+  <div class="subnav-flyout" id="adSubnav">
+    <div class="subnav-hd">广告</div>
+    <a class="subnav-link" href="ad_manager.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      广告管理
+    </a>
+    <a class="subnav-link" href="strategy_center_for_customer.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      策略中心
+    </a>
+    <a class="subnav-link active" href="strategy_template.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      策略模版
+    </a>
+    <a class="subnav-link" href="smart_suggestions.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      智能建议
+    </a>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span>广告</span><span class="sep">/</span>
+        <span id="bc-current" class="current">策略模版</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-icon" title="帮助">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="topbar-icon" title="通知">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ===== LIST VIEW ===== -->
+      <div id="listView">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title">策略模版</div>
+            <div class="page-desc">管理策略模版库，支持模版应用到具体店铺和商品范围</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ai" onclick="openChat()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              AI 优化策略
+            </button>
+            <button class="btn btn-primary">+ 新建模版</button>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="filter-card">
+          <div class="filter-item">
+            <span class="filter-label">策略目标</span>
+            <select class="filter-select" style="width:110px;">
+              <option value="">全部</option>
+              <option>减少损失</option>
+              <option>拓展流量</option>
+              <option>调整预算</option>
+              <option>调整竞价</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">策略类型</span>
+            <select class="filter-select" style="width:130px;">
+              <option value="">全部</option>
+              <option>精准否词</option>
+              <option>精准否品</option>
+              <option>暂停投放词</option>
+              <option>暂停投放品</option>
+              <option>提高预算</option>
+              <option>降低预算</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">创建日期</span>
+            <div class="date-range">
+              <input type="date" value="2026-04-01">
+              <span class="sep">—</span>
+              <input type="date" value="2026-05-06">
+            </div>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">应用状态</span>
+            <select class="filter-select" style="width:100px;">
+              <option value="">全部</option>
+              <option>已应用</option>
+              <option>未应用</option>
+            </select>
+          </div>
+          <div class="filter-divider"></div>
+          <div class="filter-item">
+            <span class="filter-label">模版名称</span>
+            <input class="filter-input" type="text" placeholder="搜索模版名称" style="width:140px;">
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              查询
+            </button>
+            <button class="btn btn-default">重置</button>
+          </div>
+        </div>
+
+        <!-- Table card -->
+        <div class="table-card" id="tableViewContainer">
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <span class="table-toolbar-title">模版列表</span>
+              <span class="total-badge">共 12 条</span>
+            </div>
+            <div class="view-toggle">
+              <button class="view-btn active" id="vBtnTable" onclick="switchView('table')" title="表格视图">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 9v6"/></svg>
+              </button>
+              <button class="view-btn" id="vBtnCard" onclick="switchView('card')" title="卡片视图">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="tableBody">
+            <table>
+              <thead>
+                <tr>
+                  <th>模版ID</th>
+                  <th>策略名称</th>
+                  <th>模版介绍</th>
+                  <th>策略类型</th>
+                  <th>策略目标</th>
+                  <th>负责人</th>
+                  <th>编辑时间</th>
+                  <th>应用状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-size:12px;color:#8c9ab0;font-family:monospace;">TPL-001</td>
+                  <td><span class="name-link" onclick="showDetail()">【精准否词】策略01</span></td>
+                  <td><div class="td-intro" title="非托管、成熟期、13周以后、非过季、手动投放、有效点击、低转化、高ACOS">非托管、成熟期、13周以后、非过季、手动投放</div></td>
+                  <td><span class="tag tag-purple">精准否词</span></td>
+                  <td><span class="tag tag-red">减少损失</span></td>
+                  <td>系统</td>
+                  <td style="color:#8c9ab0;">2026-04-20</td>
+                  <td><span class="status"><span class="status-dot dot-active"></span>已应用</span></td>
+                  <td><div class="ops">
+                    <button class="action-btn" onclick="openApplyModal()">应用</button>
+                    <button class="action-btn" onclick="showDetail()">编辑</button>
+                    <button class="action-btn">复制</button>
+                    <button class="action-btn del">删除</button>
+                  </div></td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;color:#8c9ab0;font-family:monospace;">TPL-002</td>
+                  <td><span class="name-link">【暂停投放词】策略02</span></td>
+                  <td><div class="td-intro" title="手动投放、成熟期、高花费、低转化、CTR异常、近30天无购买">手动投放、成熟期、高花费、低转化、CTR异常</div></td>
+                  <td><span class="tag tag-indigo">暂停投放词</span></td>
+                  <td><span class="tag tag-blue">拓展流量</span></td>
+                  <td>系统</td>
+                  <td style="color:#8c9ab0;">2026-04-18</td>
+                  <td><span class="status"><span class="status-dot dot-inactive"></span>未应用</span></td>
+                  <td><div class="ops">
+                    <button class="action-btn" onclick="openApplyModal()">应用</button>
+                    <button class="action-btn">编辑</button>
+                    <button class="action-btn">复制</button>
+                    <button class="action-btn del">删除</button>
+                  </div></td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;color:#8c9ab0;font-family:monospace;">TPL-003</td>
+                  <td><span class="name-link">【提高预算】策略03</span></td>
+                  <td><div class="td-intro" title="新品期、前4周、自动投放、预算消耗率>90%、转化率高于基准线">新品期、前4周、自动投放、预算消耗率>90%</div></td>
+                  <td><span class="tag tag-green">提高预算</span></td>
+                  <td><span class="tag tag-orange">调整预算</span></td>
+                  <td>系统</td>
+                  <td style="color:#8c9ab0;">2026-04-15</td>
+                  <td><span class="status"><span class="status-dot dot-active"></span>已应用</span></td>
+                  <td><div class="ops">
+                    <button class="action-btn" onclick="openApplyModal()">应用</button>
+                    <button class="action-btn">编辑</button>
+                    <button class="action-btn">复制</button>
+                    <button class="action-btn del">删除</button>
+                  </div></td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;color:#8c9ab0;font-family:monospace;">TPL-004</td>
+                  <td><span class="name-link">【精准否品】策略04</span></td>
+                  <td><div class="td-intro" title="清货期、竞品ASIN投放、高花费低产出、近60天无转化">清货期、竞品ASIN投放、高花费低产出</div></td>
+                  <td><span class="tag tag-orange">精准否品</span></td>
+                  <td><span class="tag tag-red">减少损失</span></td>
+                  <td>系统</td>
+                  <td style="color:#8c9ab0;">2026-04-10</td>
+                  <td><span class="status"><span class="status-dot dot-inactive"></span>未应用</span></td>
+                  <td><div class="ops">
+                    <button class="action-btn" onclick="openApplyModal()">应用</button>
+                    <button class="action-btn">编辑</button>
+                    <button class="action-btn">复制</button>
+                    <button class="action-btn del">删除</button>
+                  </div></td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;color:#8c9ab0;font-family:monospace;">TPL-005</td>
+                  <td><span class="name-link">【降低预算】策略05</span></td>
+                  <td><div class="td-intro" title="测款期、手动精准投放、ACOS超目标50%、近7天点击>20无转化">测款期、手动精准投放、ACOS超目标50%</div></td>
+                  <td><span class="tag tag-cyan">降低预算</span></td>
+                  <td><span class="tag tag-cyan">调整竞价</span></td>
+                  <td>系统</td>
+                  <td style="color:#8c9ab0;">2026-04-05</td>
+                  <td><span class="status"><span class="status-dot dot-active"></span>已应用</span></td>
+                  <td><div class="ops">
+                    <button class="action-btn" onclick="openApplyModal()">应用</button>
+                    <button class="action-btn">编辑</button>
+                    <button class="action-btn">复制</button>
+                    <button class="action-btn del">删除</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pagination">
+              <span class="page-info">共 12 条记录，每页 10 条</span>
+              <div class="page-btns">
+                <button class="page-btn" disabled>‹</button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">›</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card View -->
+        <div id="cardViewContainer" class="card-view-wrap">
+          <div class="table-card" style="margin-bottom:0;width:100%;">
+            <div class="table-toolbar">
+              <div class="table-toolbar-left">
+                <span class="table-toolbar-title">模版列表</span>
+                <span class="total-badge">共 12 条</span>
+              </div>
+              <div class="view-toggle">
+                <button class="view-btn" onclick="switchView('table')" title="表格视图">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 9v6"/></svg>
+                </button>
+                <button class="view-btn active" onclick="switchView('card')" title="卡片视图">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                </button>
+              </div>
+            </div>
+            <!-- tree + cards body -->
+            <div style="display:flex;min-height:520px;">
+              <!-- Left Tree -->
+              <div class="tree-panel" id="treePanel">
+                <div class="tree-panel-hd">分类导航</div>
+                <!-- rendered by JS -->
+              </div>
+              <!-- Right Cards -->
+              <div class="cards-panel" id="cardsPanel">
+                <div class="cards-breadcrumb" id="cardsBreadcrumb"></div>
+                <div class="cards-grid" id="cardsGrid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /listView -->
+
+      <!-- ===== DETAIL VIEW ===== -->
+      <div class="detail-wrap" id="detailView">
+        <div class="back-link" onclick="showList()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          返回模版列表
+        </div>
+
+        <div class="detail-hero">
+          <div class="detail-hero-top">
+            <div class="detail-name">【精准否词】策略01</div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-warning" onclick="openConfirm('disable')">停用模版</button>
+              <button class="btn btn-danger" onclick="openConfirm('delete')">删除模版</button>
+            </div>
+          </div>
+          <div class="detail-tags">
+            <span class="tag tag-purple">精准否词</span>
+            <span class="tag tag-red">减少损失</span>
+          </div>
+          <div class="detail-meta">
+            <div class="meta-item"><div class="meta-label">应用状态</div><div class="meta-value"><span class="status"><span class="status-dot dot-active"></span>已应用</span></div></div>
+            <div class="meta-item"><div class="meta-label">模版ID</div><div class="meta-value" style="font-family:monospace;">TPL-001</div></div>
+            <div class="meta-item"><div class="meta-label">策略目标</div><div class="meta-value">减少损失</div></div>
+            <div class="meta-item"><div class="meta-label">负责人</div><div class="meta-value">系统</div></div>
+            <div class="meta-item"><div class="meta-label">创建时间</div><div class="meta-value">2026-01-15</div></div>
+          </div>
+        </div>
+
+        <div class="tabs-wrap">
+          <div class="tabs-nav">
+            <div class="tab-item active" onclick="switchDetailTab('config',this)">配置明细</div>
+            <div class="tab-item" onclick="switchDetailTab('apply',this)">应用情况</div>
+            <div class="tab-item" onclick="switchDetailTab('log',this)">编辑日志</div>
+          </div>
+
+          <!-- Tab: Config -->
+          <div class="tab-panel active" id="tab-config">
+            <div class="tab-body">
+
+              <div class="section-block">
+                <div class="section-hd">策略描述</div>
+                <div class="desc-card">
+                  当搜索词的<span class="desc-purple">【近30天ACOS】</span>高于类目平均ACOS时，在<span class="desc-blue">【广告组层级】</span>对该搜索词执行<span class="desc-bold">精准否词</span>操作，防止持续亏损曝光消耗预算。
+                  <div class="desc-chips">
+                    <span class="tag tag-orange tag-sm">高ACOS</span>
+                    <span class="tag tag-purple tag-sm">低转化</span>
+                    <span class="tag tag-blue tag-sm">有效点击</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-block">
+                <div class="section-hd">执行动作</div>
+                <div class="radio-group">
+                  <label class="radio-item"><input type="radio" name="exec" value="algo"><span>算法推荐</span></label>
+                  <label class="radio-item"><input type="radio" name="exec" value="custom" checked onchange="document.getElementById('subCfg').style.display=this.value==='custom'?'':'none'"><span>自定义</span></label>
+                </div>
+                <div class="sub-config" id="subCfg">
+                  <div class="sub-row">
+                    <span class="sub-lbl">否定层级</span>
+                    <div class="radio-group">
+                      <label class="radio-item"><input type="radio" name="neg" value="camp"><span>广告活动</span></label>
+                      <label class="radio-item"><input type="radio" name="neg" value="adg" checked><span>广告组</span></label>
+                    </div>
+                  </div>
+                  <div class="sub-row">
+                    <span class="sub-lbl">匹配方式</span>
+                    <div class="radio-group">
+                      <label class="radio-item"><input type="radio" name="match" value="exact" checked><span>精准</span></label>
+                      <label class="radio-item"><input type="radio" name="match" value="phrase"><span>词组</span></label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-block">
+                <div class="section-hd">基础信息</div>
+                <div class="info-grid">
+                  <div>
+                    <div class="info-cell-lbl">推广商品维度</div>
+                    <div class="radio-group" style="flex-direction:column;gap:8px;align-items:flex-start;">
+                      <label class="radio-item"><input type="radio" name="dim-p" checked><span>父ASIN</span></label>
+                      <label class="radio-item"><input type="radio" name="dim-p"><span>子ASIN</span></label>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="info-cell-lbl">统计维度</div>
+                    <div class="radio-group" style="flex-direction:column;gap:8px;align-items:flex-start;">
+                      <label class="radio-item"><input type="radio" name="dim-s"><span>广告活动</span></label>
+                      <label class="radio-item"><input type="radio" name="dim-s" checked><span>广告组</span></label>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="info-cell-lbl">统计周期</div>
+                    <div class="radio-group" style="flex-direction:column;gap:8px;align-items:flex-start;">
+                      <label class="radio-item"><input type="radio" name="dim-t"><span>近7天</span></label>
+                      <label class="radio-item"><input type="radio" name="dim-t" checked><span>近30天</span></label>
+                      <label class="radio-item"><input type="radio" name="dim-t"><span>近90天</span></label>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="info-cell-lbl">广告活动类型</div>
+                    <div class="radio-group" style="flex-direction:column;gap:8px;align-items:flex-start;">
+                      <label class="radio-item"><input type="radio" name="dim-c"><span>不限</span></label>
+                      <label class="radio-item"><input type="radio" name="dim-c" checked><span>手动</span></label>
+                      <label class="radio-item"><input type="radio" name="dim-c"><span>自动</span></label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-block">
+                <div class="section-hd">条件配置</div>
+                <div class="cond-builder">
+                  <!-- Left rule panel -->
+                  <div class="rule-panel">
+                    <div class="rule-panel-hd">规则集</div>
+                    <!-- 指标类 -->
+                    <div>
+                      <div class="rule-group-hd" onclick="toggleRuleGroup(this)">
+                        <span class="rg-arrow open">▶</span> 指标类
+                      </div>
+                      <div class="rule-group-body">
+                        <div class="rule-item" onclick="addCond('ACOS指标')"><span>ACOS</span><span class="ri-plus">+</span></div>
+                        <div class="rule-item" onclick="addCond('CVR指标')"><span>CVR</span><span class="ri-plus">+</span></div>
+                        <div class="rule-item" onclick="addCond('点击量')"><span>点击量</span><span class="ri-plus">+</span></div>
+                        <div class="rule-item" onclick="addCond('花费')"><span>花费</span><span class="ri-plus">+</span></div>
+                        <div class="rule-item" onclick="addCond('曝光量')"><span>曝光量</span><span class="ri-plus">+</span></div>
+                        <div class="rule-item" onclick="addCond('订单量')"><span>订单量</span><span class="ri-plus">+</span></div>
+                      </div>
+                    </div>
+                    <!-- 标签类 -->
+                    <div>
+                      <div class="rule-group-hd" onclick="toggleRuleGroup(this)">
+                        <span class="rg-arrow open">▶</span> 标签类
+                      </div>
+                      <div class="rule-group-body">
+                        <!-- 父ASIN -->
+                        <div class="rule-sub-hd" onclick="toggleRuleSub(this)"><span class="rsub-arrow open">▶</span> 父ASIN标签</div>
+                        <div class="rule-sub-body">
+                          <div class="rule-item" onclick="addCond('状态标签')"><span>状态标签</span><span class="ri-plus">+</span></div>
+                          <div class="rule-item" onclick="addCond('季节标签')"><span>季节标签</span><span class="ri-plus">+</span></div>
+                          <div class="rule-item" onclick="addCond('生命周期标签')"><span>生命周期标签</span><span class="ri-plus">+</span></div>
+                        </div>
+                        <!-- 子ASIN -->
+                        <div class="rule-sub-hd" onclick="toggleRuleSub(this)"><span class="rsub-arrow open">▶</span> 子ASIN标签</div>
+                        <div class="rule-sub-body">
+                          <div class="rule-item" onclick="addCond('库存标签')"><span>库存标签</span><span class="ri-plus">+</span></div>
+                          <div class="rule-item" onclick="addCond('评分标签')"><span>评分标签</span><span class="ri-plus">+</span></div>
+                        </div>
+                        <!-- 搜索词 -->
+                        <div class="rule-sub-hd" onclick="toggleRuleSub(this)"><span class="rsub-arrow open">▶</span> 搜索词标签</div>
+                        <div class="rule-sub-body">
+                          <div class="rule-item" onclick="addCond('ACOS标签')"><span>ACOS标签</span><span class="ri-plus">+</span></div>
+                          <div class="rule-item" onclick="addCond('CVR标签')"><span>CVR标签</span><span class="ri-plus">+</span></div>
+                          <div class="rule-item" onclick="addCond('点击标签')"><span>点击标签</span><span class="ri-plus">+</span></div>
+                          <div class="rule-item" onclick="addCond('花费标签')"><span>花费标签</span><span class="ri-plus">+</span></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Right cond area -->
+                  <div class="cond-right">
+                    <button class="btn btn-default btn-sm add-group-btn" onclick="addCondGroup()">+ 添加条件组</button>
+                    <div id="condGroups">
+                      <!-- Group 1 -->
+                      <div class="cond-group">
+                        <div class="cond-group-hd">
+                          <span class="cond-group-title">条件组1 <span class="cond-group-sub">（组内：且）</span></span>
+                          <button class="cond-group-del" onclick="delCondGroup(this)">✕ 删除</button>
+                        </div>
+                        <div class="cond-rows">
+                          <div class="cond-row">
+                            <span class="cond-field-tag">ACOS标签</span>
+                            <span class="cond-op">等于</span>
+                            <select class="cond-sel"><option>高ACOS</option><option>低ACOS</option></select>
+                            <button class="cond-del-btn" onclick="this.closest('.cond-row').remove()">×</button>
+                          </div>
+                          <div class="cond-row">
+                            <span class="cond-field-tag">点击标签</span>
+                            <span class="cond-op">等于</span>
+                            <select class="cond-sel"><option>有效点击</option><option>无效点击</option></select>
+                            <button class="cond-del-btn" onclick="this.closest('.cond-row').remove()">×</button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="or-divider"><div class="or-line"></div><span class="or-badge">或</span><div class="or-line"></div></div>
+                      <!-- Group 2 -->
+                      <div class="cond-group">
+                        <div class="cond-group-hd">
+                          <span class="cond-group-title">条件组2 <span class="cond-group-sub">（组内：且）</span></span>
+                          <button class="cond-group-del" onclick="delCondGroup(this)">✕ 删除</button>
+                        </div>
+                        <div class="cond-rows">
+                          <div class="cond-row">
+                            <span class="cond-field-tag">CVR标签</span>
+                            <span class="cond-op">等于</span>
+                            <select class="cond-sel"><option>低CVR</option><option>高CVR</option></select>
+                            <button class="cond-del-btn" onclick="this.closest('.cond-row').remove()">×</button>
+                          </div>
+                          <div class="cond-row">
+                            <span class="cond-field-tag">花费标签</span>
+                            <span class="cond-op">等于</span>
+                            <select class="cond-sel"><option>花费大于10</option><option>花费小于10</option></select>
+                            <button class="cond-del-btn" onclick="this.closest('.cond-row').remove()">×</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Tab: Apply -->
+          <div class="tab-panel" id="tab-apply">
+            <div class="tab-body">
+              <table class="apply-table">
+                <thead>
+                  <tr>
+                    <th>应用人</th><th>应用状态</th><th>应用时间</th><th>应用范围</th>
+                    <th>是否托管</th><th>托管执行时间</th><th>托管不执行日期</th><th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>系统</td>
+                    <td><span class="status"><span class="status-dot dot-active"></span>生效中</span></td>
+                    <td style="color:#8c9ab0;white-space:nowrap;">2026-04-20 09:30</td>
+                    <td><div style="font-size:12px;">美国站 / 店铺A</div><div style="font-size:12px;color:#8c9ab0;">父ASIN: B09XXXX001</div></td>
+                    <td><span class="tag tag-purple tag-sm">是</span></td>
+                    <td>08:00</td>
+                    <td style="font-size:12px;color:#8c9ab0;">2026/05/01—2026/05/20</td>
+                    <td><button class="action-btn" onclick="openApplyModal()">编辑</button></td>
+                  </tr>
+                  <tr>
+                    <td>系统</td>
+                    <td><span class="status"><span class="status-dot dot-inactive"></span>已暂停</span></td>
+                    <td style="color:#8c9ab0;white-space:nowrap;">2026-04-18 14:15</td>
+                    <td><div style="font-size:12px;">日本站 / 店铺B</div><div style="font-size:12px;color:#8c9ab0;">子ASIN: B09XXXX002</div></td>
+                    <td><span class="tag tag-gray tag-sm">否</span></td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td><button class="action-btn" onclick="openApplyModal()">编辑</button></td>
+                  </tr>
+                  <tr>
+                    <td>系统</td>
+                    <td><span class="status"><span class="status-dot dot-active"></span>生效中</span></td>
+                    <td style="color:#8c9ab0;white-space:nowrap;">2026-04-25 11:00</td>
+                    <td><div style="font-size:12px;">英国站、德国站 / 店铺A,C</div><div style="font-size:12px;color:#8c9ab0;">父ASIN: 全部</div></td>
+                    <td><span class="tag tag-purple tag-sm">是</span></td>
+                    <td>06:00</td>
+                    <td>—</td>
+                    <td><button class="action-btn" onclick="openApplyModal()">编辑</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab: Log -->
+          <div class="tab-panel" id="tab-log">
+            <div class="tab-body">
+              <table class="apply-table">
+                <thead><tr><th>操作时间</th><th>操作人</th><th>修改内容</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td style="color:#8c9ab0;white-space:nowrap;">2026-04-28 15:42</td>
+                    <td>张三</td>
+                    <td><div>策略描述</div><div class="log-before">高于类目平均ACOS 1.2倍时触发</div><div class="log-after">高于类目平均ACOS时触发</div></td>
+                  </tr>
+                  <tr>
+                    <td style="color:#8c9ab0;white-space:nowrap;">2026-04-22 10:18</td>
+                    <td>李四</td>
+                    <td><div>统计周期</div><div class="log-before">近7天</div><div class="log-after">近30天</div></td>
+                  </tr>
+                  <tr>
+                    <td style="color:#8c9ab0;white-space:nowrap;">2026-04-15 09:05</td>
+                    <td>张三</td>
+                    <td><div>条件配置 - 新增条件组</div><div class="log-before">（无）</div><div class="log-after">条件组2：CVR标签=低CVR, 花费标签=花费大于10</div></td>
+                  </tr>
+                  <tr>
+                    <td style="color:#8c9ab0;white-space:nowrap;">2026-01-15 11:30</td>
+                    <td>张三</td>
+                    <td><div>模版创建</div><div class="log-after">初始版本创建</div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- /detailView -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ===== MODALS OVERLAY ===== -->
+<div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+
+<!-- Apply Modal -->
+<div class="modal" id="applyModal">
+  <div class="modal-hd">
+    <div class="modal-title" id="applyModalTitle">应用策略模版</div>
+    <button class="modal-close" onclick="closeAllModals()">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="modal-sec">
+      <div class="modal-sec-title">应用范围</div>
+      <div class="form-row">
+        <label class="form-label">站点 <span style="color:#dc2626;">*</span></label>
+        <select class="form-control">
+          <option value="">请选择站点</option>
+          <option>美国</option><option>日本</option><option>英国</option><option>德国</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">店铺 <span style="color:#dc2626;">*</span></label>
+        <select class="form-control">
+          <option value="">请选择店铺</option>
+          <option>店铺A</option><option>店铺B</option><option>店铺C</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">商品范围</label>
+        <select class="form-control">
+          <option value="">请选择商品范围</option>
+          <option>父ASIN</option><option>子ASIN</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">具体ASIN</label>
+        <input type="text" class="form-control" placeholder="输入ASIN，多个用逗号分隔">
+      </div>
+    </div>
+    <div class="modal-sec">
+      <div class="modal-sec-title">托管设置</div>
+      <div class="form-row">
+        <label class="form-label">是否托管</label>
+        <div class="radio-group" style="margin-top:4px;">
+          <label class="radio-item"><input type="radio" name="m-managed" value="yes" onchange="toggleManaged(true)"><span>是</span></label>
+          <label class="radio-item"><input type="radio" name="m-managed" value="no" checked onchange="toggleManaged(false)"><span>否</span></label>
+        </div>
+      </div>
+      <div id="managedFields" class="toggle-section hide">
+        <div class="form-row">
+          <label class="form-label">执行时间</label>
+          <input type="time" class="form-control" value="08:00" style="width:160px;">
+        </div>
+        <div class="form-row" style="margin-bottom:0;">
+          <label class="form-label">不执行日期</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="date" class="form-control" style="flex:1;">
+            <span style="color:#bfbfbf;font-size:12px;">至</span>
+            <input type="date" class="form-control" style="flex:1;">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-default" onclick="closeAllModals()">取消</button>
+    <button class="btn btn-primary">确认应用</button>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal confirm-modal" id="confirmModal">
+  <div class="modal-hd">
+    <div class="modal-title" id="confirmTitle">确认操作</div>
+    <button class="modal-close" onclick="closeAllModals()">×</button>
+  </div>
+  <div class="confirm-body">
+    <div class="confirm-icon" id="confirmIcon">⚠️</div>
+    <div class="confirm-title-text" id="confirmText">确认停用该模版？</div>
+    <div class="confirm-sub" id="confirmSub">停用后，已应用的实例将暂停执行，可随时恢复。</div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-default" onclick="closeAllModals()">取消</button>
+    <button class="btn" id="confirmOkBtn">确认</button>
+  </div>
+</div>
+
+<!-- AI CHAT DRAWER -->
+<div class="chat-drawer" id="chatDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      AI 优化策略
+      <span class="ai-pill">BETA</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="drawer-notice">⚠️ 仅支持修改已有否定类策略</span>
+      <button class="drawer-close" onclick="closeChat()">×</button>
+    </div>
+  </div>
+  <div class="chat-body" id="chatBody">
+    <div class="chat-welcome" id="chatWelcome">
+      <div class="welcome-icon">
+        <svg viewBox="0 0 24 24" width="28" height="28"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" fill="none" stroke="#fff" stroke-width="1.8"/></svg>
+      </div>
+      <div class="welcome-h">AI 优化策略模版</div>
+      <div class="welcome-p">告诉我您想如何调整现有策略模版的条件配置，AI 将解析意图并生成优化预览。</div>
+      <div class="welcome-limit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        当前仅支持修改：精准否词、否品保护等否定类策略模版
+      </div>
+      <div class="quick-starts">
+        <div class="qs-btn" onclick="useQuickStart(this)">将ACOS阈值从高于平均改为高于1.5倍</div>
+        <div class="qs-btn" onclick="useQuickStart(this)">增加花费大于20的条件</div>
+        <div class="qs-btn" onclick="useQuickStart(this)">修改否定层级为广告活动</div>
+      </div>
+    </div>
+  </div>
+  <div class="chat-footer">
+    <div class="input-box">
+      <div class="input-row">
+        <textarea class="chat-textarea" id="chatInput" placeholder="描述您想对哪条策略模版进行什么调整..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          发送
+        </button>
+      </div>
+    </div>
+    <div class="input-tips">
+      <span class="tip-tag">Enter</span> 发送 &nbsp;
+      <span class="tip-tag">Shift+Enter</span> 换行
+    </div>
+  </div>
+</div>
+
+<div class="nav-toast" id="navToast"></div>
+
+<script>
+// ===== NAV =====
+let subnavOpen = false;
+function toggleAdSubnav(e) {
+  e.preventDefault();
+  subnavOpen = !subnavOpen;
+  document.getElementById('adSubnav').classList.toggle('open', subnavOpen);
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#navItemAd') && !e.target.closest('#adSubnav')) {
+    subnavOpen = false;
+    document.getElementById('adSubnav').classList.remove('open');
+  }
+});
+function wipToast(e) {
+  e.preventDefault();
+  const t = document.getElementById('navToast');
+  t.textContent = '该功能正在建设中...';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ===== VIEW SWITCH =====
+let activeView = 'table';
+let treeInited = false;
+
+function switchView(v) {
+  activeView = v;
+  const tbl = document.getElementById('tableViewContainer');
+  const card = document.getElementById('cardViewContainer');
+  const vBtnT = document.getElementById('vBtnTable');
+  const vBtnC = document.getElementById('vBtnCard');
+  if (v === 'table') {
+    tbl.style.display = '';
+    card.classList.remove('show');
+    vBtnT.classList.add('active'); vBtnC.classList.remove('active');
+  } else {
+    tbl.style.display = 'none';
+    card.classList.add('show');
+    vBtnT.classList.remove('active'); vBtnC.classList.add('active');
+    if (!treeInited) { buildTree(); treeInited = true; }
+  }
+}
+
+// ===== TREE DATA =====
+const TREE = [
+  { label:'成熟期', icon:'📈', children:[
+    { label:'广告活动', children:[{label:'提高预算',count:2},{label:'降低预算',count:1}]},
+    { label:'推广品', children:[{label:'精准否品',count:2},{label:'暂停投放品',count:1}]},
+    { label:'投放词', children:[{label:'精准否词',count:3},{label:'暂停投放词',count:2}]},
+    { label:'搜索词', children:[{label:'精准否词',count:4},{label:'暂停投放词',count:2}]},
+    { label:'搜索品', children:[{label:'精准否品',count:1}]},
+  ]},
+  { label:'新品期', icon:'🌟', children:[
+    { label:'广告活动', children:[{label:'提高预算',count:3}]},
+    { label:'搜索词', children:[{label:'精准否词',count:1},{label:'暂停投放词',count:1}]},
+  ]},
+  { label:'测款期', icon:'🚀', children:[
+    { label:'投放词', children:[{label:'暂停投放词',count:2}]},
+    { label:'搜索品', children:[{label:'精准否品',count:1}]},
+  ]},
+  { label:'清货期', icon:'📉', children:[
+    { label:'推广品', children:[{label:'暂停投放品',count:2}]},
+    { label:'搜索词', children:[{label:'精准否词',count:1}]},
+  ]},
+];
+
+function sumCount(node) {
+  if (!node.children) return node.count || 0;
+  return node.children.reduce((s,c) => s + sumCount(c), 0);
+}
+
+let selectedNode = {l1:'成熟期', l2:'搜索词', l3:'精准否词'};
+
+function buildTree() {
+  const panel = document.getElementById('treePanel');
+  let html = '<div class="tree-panel-hd">分类导航</div>';
+  TREE.forEach(l1 => {
+    const c1 = sumCount(l1);
+    html += `<div class="tree-l1">
+      <div class="tree-l1-hd" onclick="toggleL1(this)">
+        <span class="tree-l1-toggle open"><svg viewBox="0 0 10 10" fill="currentColor"><path d="M3 1l4 4-4 4V1z"/></svg></span>
+        <span style="margin-right:4px;">${l1.icon||''}</span>
+        <span class="tree-l1-name">${l1.label}</span>
+        <span class="tree-l1-count">${c1}</span>
+      </div>
+      <div class="tree-l1-body">`;
+    l1.children.forEach(l2 => {
+      const c2 = sumCount(l2);
+      html += `<div class="tree-l2">
+        <div class="tree-l2-hd" onclick="toggleL2(this)">
+          <span class="tree-l2-toggle open"><svg viewBox="0 0 10 10" fill="currentColor"><path d="M3 1l4 4-4 4V1z"/></svg></span>
+          <span class="tree-l2-name">${l2.label}</span>
+          <span class="tree-l2-count">${c2}</span>
+        </div>
+        <div class="tree-l2-body">`;
+      l2.children.forEach(l3 => {
+        const sel = selectedNode.l1===l1.label && selectedNode.l2===l2.label && selectedNode.l3===l3.label;
+        html += `<div class="tree-l3-item${sel?' selected':''}" data-l1="${l1.label}" data-l2="${l2.label}" data-l3="${l3.label}" onclick="selectL3(this)">
+          <span>${l3.label}</span><span class="tree-l3-count">${l3.count}</span>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  panel.innerHTML = html;
+  renderCards(selectedNode.l1, selectedNode.l2, selectedNode.l3);
+}
+
+function toggleL1(el) {
+  const body = el.nextElementSibling;
+  const toggle = el.querySelector('.tree-l1-toggle');
+  const open = toggle.classList.contains('open');
+  toggle.classList.toggle('open', !open);
+  body.style.display = open ? 'none' : '';
+}
+function toggleL2(el) {
+  const body = el.nextElementSibling;
+  const toggle = el.querySelector('.tree-l2-toggle');
+  const open = toggle.classList.contains('open');
+  toggle.classList.toggle('open', !open);
+  body.style.display = open ? 'none' : '';
+}
+function selectL3(el) {
+  document.querySelectorAll('.tree-l3-item').forEach(n => n.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedNode = {l1: el.dataset.l1, l2: el.dataset.l2, l3: el.dataset.l3};
+  renderCards(selectedNode.l1, selectedNode.l2, selectedNode.l3);
+}
+
+// ===== CARDS =====
+const CARD_DATA = {
+  '成熟期__搜索词__精准否词': [
+    {name:'【精准否词】策略01', applied:true, chips:['高ACOS','低转化','有效点击']},
+    {name:'【精准否词】策略02', applied:true, chips:['高ACOS','花费>10']},
+    {name:'【精准否词】策略03', applied:false, chips:['低CVR','有效点击']},
+    {name:'【精准否词】策略04', applied:false, chips:['高ACOS','低转化']},
+  ]
+};
+
+function renderCards(l1,l2,l3) {
+  document.getElementById('cardsBreadcrumb').innerHTML =
+    `<span>${l1}</span><span class="bc-sep">›</span><span>${l2}</span><span class="bc-sep">›</span><span class="bc-cur">${l3}</span>`;
+  const key = `${l1}__${l2}__${l3}`;
+  const cards = CARD_DATA[key] || [
+    {name:`【${l3}】策略01`, applied:true, chips:['高ACOS','低转化']},
+    {name:`【${l3}】策略02`, applied:false, chips:['有效点击','花费>10']},
+    {name:`【${l3}】策略03`, applied:true, chips:['低CVR','高花费']},
+  ];
+  document.getElementById('cardsGrid').innerHTML = cards.map(c => `
+    <div class="strategy-card">
+      <div class="sc-name" onclick="showDetail()">${c.name}</div>
+      <div class="sc-status">${c.applied ? '<span class="sc-badge-applied">已应用</span>' : '<span class="sc-badge-unapplied">未应用</span>'}</div>
+      <div class="sc-chips">${c.chips.map(t=>`<span class="sc-chip">${t}</span>`).join('')}</div>
+      <div class="sc-ops">
+        <button class="action-btn" onclick="showDetail()">查看</button>
+        <button class="action-btn del">删除</button>
+        <button class="sc-apply-btn" onclick="openApplyModal()">应用</button>
+      </div>
+    </div>`).join('');
+}
+
+// ===== DETAIL =====
+function showDetail() {
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('detailView').classList.add('show');
+  document.getElementById('bc-current').textContent = '【精准否词】策略01';
+  window.scrollTo(0,0);
+}
+function showList() {
+  document.getElementById('listView').style.display = '';
+  document.getElementById('detailView').classList.remove('show');
+  document.getElementById('bc-current').textContent = '策略模版';
+}
+
+function switchDetailTab(id, el) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// ===== CONDITION BUILDER =====
+let groupCount = 2;
+function toggleRuleGroup(el) {
+  const body = el.nextElementSibling;
+  const arrow = el.querySelector('.rg-arrow');
+  const open = arrow.classList.contains('open');
+  arrow.classList.toggle('open',!open);
+  body.style.display = open ? 'none' : '';
+}
+function toggleRuleSub(el) {
+  const body = el.nextElementSibling;
+  const arrow = el.querySelector('.rsub-arrow');
+  const open = arrow.classList.contains('open');
+  arrow.classList.toggle('open',!open);
+  body.style.display = open ? 'none' : '';
+}
+function addCond(field) {
+  const groups = document.querySelectorAll('#condGroups .cond-group');
+  const target = groups[groups.length-1];
+  if (!target) { addCondGroup(); return addCond(field); }
+  const rows = target.querySelector('.cond-rows');
+  const row = document.createElement('div');
+  row.className = 'cond-row';
+  row.innerHTML = `<span class="cond-field-tag">${field}</span><span class="cond-op">等于</span><select class="cond-sel"><option>选项1</option><option>选项2</option></select><button class="cond-del-btn" onclick="this.closest('.cond-row').remove()">×</button>`;
+  rows.appendChild(row);
+}
+function addCondGroup() {
+  groupCount++;
+  const container = document.getElementById('condGroups');
+  const div = document.createElement('div');
+  div.className = 'or-divider';
+  div.innerHTML = '<div class="or-line"></div><span class="or-badge">或</span><div class="or-line"></div>';
+  const g = document.createElement('div');
+  g.className = 'cond-group';
+  g.innerHTML = `<div class="cond-group-hd"><span class="cond-group-title">条件组${groupCount} <span class="cond-group-sub">（组内：且）</span></span><button class="cond-group-del" onclick="delCondGroup(this)">✕ 删除</button></div><div class="cond-rows"><div style="padding:12px 14px;font-size:12px;color:#bfbfbf;">从左侧规则集点击「+」添加条件</div></div>`;
+  container.appendChild(div);
+  container.appendChild(g);
+}
+function delCondGroup(btn) {
+  const g = btn.closest('.cond-group');
+  const prev = g.previousElementSibling;
+  const next = g.nextElementSibling;
+  if (prev && prev.classList.contains('or-divider')) prev.remove();
+  else if (next && next.classList.contains('or-divider')) next.remove();
+  g.remove();
+}
+
+// ===== MODALS =====
+function openApplyModal() {
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('applyModal').classList.add('show');
+  document.getElementById('applyModalTitle').textContent = '应用策略模版';
+}
+function openConfirm(type) {
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('confirmModal').classList.add('show');
+  const cfg = type==='disable'
+    ? {title:'确认停用',icon:'⚠️',text:'确认停用该策略模版？',sub:'停用后已应用实例将暂停执行，可随时恢复。',btnCls:'btn btn-warning',btnTxt:'确认停用'}
+    : {title:'确认删除',icon:'🗑️',text:'确认删除该策略模版？',sub:'删除后数据不可恢复，已应用实例将同步停止。',btnCls:'btn btn-danger',btnTxt:'确认删除'};
+  document.getElementById('confirmTitle').textContent = cfg.title;
+  document.getElementById('confirmIcon').textContent = cfg.icon;
+  document.getElementById('confirmText').textContent = cfg.text;
+  document.getElementById('confirmSub').textContent = cfg.sub;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.className = cfg.btnCls;
+  btn.textContent = cfg.btnTxt;
+  btn.onclick = closeAllModals;
+}
+function closeAllModals() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('applyModal').classList.remove('show');
+  document.getElementById('confirmModal').classList.remove('show');
+}
+function toggleManaged(show) {
+  document.getElementById('managedFields').classList.toggle('hide', !show);
+}
+
+// ===== AI CHAT =====
+let chatState = 0;
+function openChat() {
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('chatDrawer').classList.add('show');
+  setTimeout(() => document.getElementById('chatInput').focus(), 350);
+}
+function closeChat() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('chatDrawer').classList.remove('show');
+}
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+function useQuickStart(el) { document.getElementById('chatInput').value=el.textContent.trim(); sendMessage(); }
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim(); if(!text) return;
+  document.getElementById('chatWelcome').style.display='none';
+  appendUserMsg(text); input.value=''; input.style.height='auto';
+  if(chatState===0){chatState=1;showTyping(()=>appendAIRecognize(text));}
+  else if(chatState===1){chatState=2;showTyping(appendAIPreview);}
+  else{chatState=0;showTyping(appendAIGeneric);}
+}
+function appendUserMsg(text) {
+  const el=document.createElement('div');el.className='chat-msg user';
+  el.innerHTML=`<div class="msg-avatar avatar-user">杨</div><div class="msg-body"><div class="msg-name">我</div><div class="bubble bubble-user">${esc(text)}</div></div>`;
+  document.getElementById('chatBody').appendChild(el);scrollBottom();
+}
+function showTyping(cb) {
+  const el=document.createElement('div');el.className='chat-msg';el.id='typingInd';
+  el.innerHTML=`<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 优化助手</div><div class="bubble bubble-ai"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
+  document.getElementById('chatBody').appendChild(el);scrollBottom();
+  setTimeout(()=>{const t=document.getElementById('typingInd');if(t)t.remove();cb();scrollBottom();},1400);
+}
+function appendAIRecognize(txt) {
+  const el=document.createElement('div');el.className='chat-msg';
+  el.innerHTML=`<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 优化助手</div><div class="bubble bubble-ai">已识别优化意图 ✅<br><br><ul><li>🎯 <strong>策略类型</strong>：<code>精准否词（广告组）</code></li><li>🏷️ <strong>调整内容</strong>：<code>${esc(txt)}</code></li><li>📍 <strong>否词层级</strong>：广告组</li></ul><br>识别是否正确？如需调整请继续描述。</div></div>`;
+  document.getElementById('chatBody').appendChild(el);scrollBottom();
+}
+function appendAIPreview() {
+  const el=document.createElement('div');el.className='chat-msg';
+  el.innerHTML=`<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 优化助手</div><div class="bubble bubble-ai">参数已确认，以下为优化预览 👇</div><div class="preview-card"><div class="preview-header"><span class="preview-header-text">优化预览 · <span>【精准否词】策略01</span></span></div><div class="preview-body"><div class="preview-section"><div class="preview-section-title">策略类型</div><div class="cond-tags"><span class="cond-tag cond-tag-purple">精准否词（广告组）</span></div></div><div class="preview-section"><div class="preview-section-title">修改内容</div><div class="cond-tags"><span class="cond-tag cond-tag-green">ACOS阈值：高于平均 → 高于1.5倍</span></div></div><div class="preview-params"><div class="param-item"><div class="param-label">影响策略数</div><div class="param-value">1 条</div></div><div class="param-item"><div class="param-label">生效时间</div><div class="param-value">立即生效</div></div></div></div><div class="preview-footer"><button class="btn btn-default" onclick="chatState=1;">修改条件</button><button class="btn btn-primary" onclick="confirmOptimize(this)">✓ 确认优化</button></div></div></div>`;
+  document.getElementById('chatBody').appendChild(el);scrollBottom();
+}
+function appendAIGeneric() {
+  const el=document.createElement('div');el.className='chat-msg';
+  el.innerHTML=`<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 优化助手</div><div class="bubble bubble-ai">如需对其他策略模版进行优化，请继续描述需求。</div></div>`;
+  document.getElementById('chatBody').appendChild(el);scrollBottom();
+}
+function confirmOptimize(btn) {
+  btn.disabled=true;btn.textContent='优化中...';btn.style.opacity='.6';
+  setTimeout(()=>{
+    const el=document.createElement('div');el.className='chat-msg';
+    el.innerHTML=`<div class="msg-avatar avatar-ai">AI</div><div class="msg-body"><div class="msg-name">AI 优化助手</div><div class="bubble bubble-ai">模版已成功优化 🎉</div><div class="success-box"><span class="success-icon">✅</span><div class="success-text"><strong>【精准否词】策略01</strong> 已更新。<br>ACOS阈值已调整为高于类目平均1.5倍。<br><span class="success-link" onclick="closeChat();showDetail()">点击查看模版详情 →</span></div></div></div>`;
+    document.getElementById('chatBody').appendChild(el);chatState=3;scrollBottom();
+  },1200);
+}
+function scrollBottom(){const b=document.getElementById('chatBody');b.scrollTop=b.scrollHeight;}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>
